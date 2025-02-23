@@ -1,0 +1,7 @@
+name = "MultiTensorKit"
+uuid = "f0555a46-f681-4ef1-bed5-d64870568636"
+authors = ["Boris De Vos, Laurens Lootens and Lukas Devos"]
+version = "0.1.0"
+
+[compat]
+julia = "1.10"
