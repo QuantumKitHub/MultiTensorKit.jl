@@ -36,9 +36,14 @@ TensorKitSectors.BraidingStyle(::Type{A4Object}) = NoBraiding()
 
 function TensorKitSectors.:⊗(a::A4Object, b::A4Object)
     @assert a.j == b.i
-    return Iterators.filter(c -> NSymbol(a, b, c) > 0,
-                            map(label -> A4Object(a.i, b.j, label),
-                                numlabels(A4Object, a.i, b.j)))
+    Ncache = _get_Ncache(A4Object)[a.i, a.j, b.j]
+    return A4Object[A4Object(a.i, b.j, c_l)
+                    for (a_l, b_l, c_l) in keys(Ncache)
+                    if (a_l == a.label && b_l == b.label)]
+end
+
+function _numlabels(::Type{A4Object}, i, j)
+    return Ncache = _get_Ncache(A4Object)
 end
 
 # Data from files
@@ -117,16 +122,14 @@ function extract_dual(::Type{A4Object})
     end
 end
 
-function Base.one(a::A4Object)
+function Base.one(a::BimoduleSector)
     a.i == a.j || error("don't know how to define one for modules")
-    global Dualcache
-    return A4Object(i, i, get(Dualcache, T)[1])
+    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][1])
 end
 
-function Base.conj(a::A4Object)
+function Base.conj(a::BimoduleSector)
     a.i == a.j || error("don't know how to define dual for modules")
-    global Dualcache
-    return A4Object(i, i, get(Dualcache, T)[2][i])
+    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][2][a.label])
 end
 
 function extract_Fsymbol(::Type{A4Object})
@@ -142,12 +145,17 @@ function extract_Fsymbol(::Type{A4Object})
                 a, b, c, d, e, f = parse.(Int, split(string(key)[2:(end - 1)], ", "))
                 a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
                                                                 (k, l, c), (i, l, d),
-                                                                (i, j, e), (j, l, f)))
-                y[(a, b, c, d, e, f)] = reshape(v,
-                                                (Nsymbol(a_ob, b_ob, e_ob),
-                                                 Nsymbol(e_ob, c_ob, d_ob),
-                                                 Nsymbol(b_ob, c_ob, f_ob),
-                                                 Nsymbol(a_ob, f_ob, d_ob)))
+                                                                (i, k, e), (j, l, f)))
+                result = Array{ComplexF64,4}(undef,
+                                             (Nsymbol(a_ob, b_ob, e_ob),
+                                              Nsymbol(e_ob, c_ob, d_ob),
+                                              Nsymbol(b_ob, c_ob, f_ob),
+                                              Nsymbol(a_ob, f_ob, d_ob)))
+                map!(result, reshape(v, size(result))) do cmplxdict
+                    return complex(cmplxdict[:re], cmplxdict[:im])
+                end
+
+                y[(a, b, c, d, e, f)] = result
             end
         end
     end
