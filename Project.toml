@@ -9,7 +9,20 @@ JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 TensorKitSectors = "13a9c161-d5da-41f0-bcbd-e1a08ae0647f"
 
 [compat]
+Aqua = "0.8.9"
 Artifacts = "1.11.0"
 JSON3 = "1.14.1"
+SafeTestsets = "0.1"
 TensorKitSectors = "0.1.2"
+Test = "1.10"
+TestExtras = "0.3"
 julia = "1.10"
+
+[extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestExtras = "5ed8adda-3752-4e41-b88a-e8b09835ee3a"
+
+[targets]
+test = ["Aqua", "SafeTestsets", "Test", "TestExtras"]
