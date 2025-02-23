@@ -3,5 +3,13 @@ uuid = "f0555a46-f681-4ef1-bed5-d64870568636"
 authors = ["Boris De Vos, Laurens Lootens and Lukas Devos"]
 version = "0.1.0"
 
+[deps]
+Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+TensorKitSectors = "13a9c161-d5da-41f0-bcbd-e1a08ae0647f"
+
 [compat]
+Artifacts = "1.11.0"
+JSON3 = "1.14.1"
+TensorKitSectors = "0.1.2"
 julia = "1.10"

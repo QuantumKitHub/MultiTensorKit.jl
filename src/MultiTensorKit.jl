@@ -1,5 +1,11 @@
 module MultiTensorKit
 
-# Write your package code here.
+export BimoduleSector, A4Object
+
+using JSON3
+using Artifacts
+using TensorKitSectors
+
+include("bimodulesector.jl")
 
 end
