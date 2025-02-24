@@ -127,6 +127,14 @@ function Base.one(a::BimoduleSector)
     return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][1])
 end
 
+function leftone(a::BimoduleSector)
+    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][1])
+end
+
+function rightone(a::BimoduleSector)
+    return A4Object(a.j, a.j, _get_dual_cache(typeof(a))[a.j][1])
+end
+
 function Base.conj(a::BimoduleSector)
     a.i == a.j || error("don't know how to define dual for modules")
     return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][2][a.label])
