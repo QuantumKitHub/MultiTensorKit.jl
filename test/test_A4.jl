@@ -19,8 +19,8 @@ end
         @test @constinferred(hash(s[1])) == hash(deepcopy(s[1]))
         @test isone(@constinferred(one(s[1])))
         @constinferred dual(s[1])
-        @constinferred dim(s[1])
-        @constinferred frobeniusschur(s[1])
+        @constinferred dim(s[1]) # problem with this and 3 below
+        @constinferred frobeniusschur(s[1]) 
         @constinferred Bsymbol(s...)
         @constinferred Fsymbol(s..., s...)
     end
@@ -52,3 +52,5 @@ end
         end
     end
 end
+
+#TODO: add tests for module categories
