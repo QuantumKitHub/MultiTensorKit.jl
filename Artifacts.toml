@@ -3,4 +3,4 @@ git-tree-sha1 = "78815c991b175f649504b29f6d52101bc7ee8ead"
 
     [[fusiondata.download]]
     sha256 = "95de3103709cdf08e25f098ead80eb9bec9965568720ddbec80d83e52f9102a5"
-    url = "https://github.com/QuantumKitHub/MultiTensorKit.jl/archive/refs/tags/data-v0.1.1.tar.gz"
+    url = "https://github.com/QuantumKitHub/MultiTensorKit.jl/archive/refs/tags/data-v0.1.0.tar.gz"
