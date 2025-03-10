@@ -4,7 +4,13 @@ struct BimoduleSector{Name} <: Sector
     label::Int
 end
 BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
+#TODO: place bound on what BimoduleSectors can be made
+# currently you can define A4Object(anyint, anyint, anyint)
 const A4Object = BimoduleSector{:A4}
+# function A4Object(i::Int, j::Int, label::Int)
+#     i <= 12 && j <= 12 || throw(DomainError("object outside the matrix"))
+#     return BimoduleSector{A4Object}(i, j, label)
+# end
 
 # Utility implementations
 # -----------------------
@@ -146,6 +152,7 @@ function extract_Fsymbol(::Type{A4Object})
         @assert isfile(filename) "cannot find $filename"
         json_string = read(filename, String)
         Farray_part = copy(JSON3.read(json_string))
+        @show Farray_part
         return map(enumerate(Farray_part[Symbol(i)])) do (I, x)
             j, k, l = Tuple(CartesianIndices((12, 12, 12))[I])
             y = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
@@ -159,6 +166,49 @@ function extract_Fsymbol(::Type{A4Object})
                                               Nsymbol(e_ob, c_ob, d_ob),
                                               Nsymbol(b_ob, c_ob, f_ob),
                                               Nsymbol(a_ob, f_ob, d_ob)))
+                #@show size(result), a_ob, b_ob, c_ob, d_ob, e_ob, f_ob, v
+                #@show result, v
+                s1 = length(result)
+                s2 = length(v)
+                @assert s1 == s2 "$s1, $s2, $a_ob, $b_ob, $c_ob, $d_ob, $e_ob, $f_ob, $v, $result"
+                map!(result, reshape(v, size(result))) do cmplxdict
+                    return complex(cmplxdict[:re], cmplxdict[:im])
+                end
+
+                y[(a, b, c, d, e, f)] = result
+            end
+        end
+    end
+end
+
+function extract_Fsymbol2(::Type{A4Object})
+    return mapreduce((x, y) -> cat(x, y; dims=1), 1:12) do i
+        filename = joinpath(artifact_path, "A4", "Fsymbol_$i.txt")
+        filename2 = joinpath(artifact_path, "A4", "Fsymbol_$i.json")
+        @assert isfile(filename) "cannot find $filename"
+        json_string = read(filename2, String)
+        txt_string = read(filename, String)
+        Farray_part = copy(readdlm(txt_string))
+        Farray_part2 = copy(JSON3.read(json_string))
+        @assert F_array_part == Farray_part2
+        return map(enumerate(Farray_part[Symbol(i)])) do (I, x)
+            j, k, l = Tuple(CartesianIndices((12, 12, 12))[I])
+            y = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
+            for (key, v) in x
+                a, b, c, d, e, f = parse.(Int, split(string(key)[2:(end - 1)], ", "))
+                a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
+                                                                (k, l, c), (i, l, d),
+                                                                (i, k, e), (j, l, f)))
+                result = Array{ComplexF64,4}(undef,
+                                             (Nsymbol(a_ob, b_ob, e_ob),
+                                              Nsymbol(e_ob, c_ob, d_ob),
+                                              Nsymbol(b_ob, c_ob, f_ob),
+                                              Nsymbol(a_ob, f_ob, d_ob)))
+                #@show size(result), a_ob, b_ob, c_ob, d_ob, e_ob, f_ob, v
+                #@show result, v
+                s1 = length(result)
+                s2 = length(v)
+                @assert s1 == s2 "$s1, $s2, $a_ob, $b_ob, $c_ob, $d_ob, $e_ob, $f_ob, $v, $result"
                 map!(result, reshape(v, size(result))) do cmplxdict
                     return complex(cmplxdict[:re], cmplxdict[:im])
                 end
@@ -175,7 +225,7 @@ const Fcache = IdDict{Type{<:BimoduleSector},
 function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
     global Fcache
     return get!(Fcache, T) do
-        return extract_Fsymbol(T)
+        return extract_Fsymbol2(T)
     end
 end
 
