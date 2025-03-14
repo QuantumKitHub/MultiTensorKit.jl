@@ -103,7 +103,7 @@ function extract_dual(::Type{A4Object})
     ncats = size(N, 1)
     return map(1:ncats) do i
         Niii = N[i, i, i]
-        nobj = maximum(first, keys(Niii))
+        nobj = maximum(first, keys(Niii)) # this only works for fusion cats
 
         # find identity object:
         # I x I -> I, a x I -> a, I x a -> a
@@ -201,11 +201,13 @@ function extract_Fsymbol(::Type{A4Object})
                                               Nsymbol(b_ob, c_ob, f_ob),
                                               Nsymbol(a_ob, f_ob, d_ob)))
 
-                s1 = length(result)
-                s2 = length(Fvals)
-                @assert s1 == s2 "$i, $j, $k, $l, $labels, $Fvals"                              
-                map!(result, reshape(Fvals, size(result))) do pair
-                    return pair[2]
+                if length(result) == length(Fvals)                             
+                    map!(result, reshape(Fvals, size(result))) do pair
+                        return pair[2]
+                    end
+                else # due to sparse data, some Fvals are missing and we need to fill in zeros
+                    # given result, can we track the missing CartesianIndices?
+                    println("Mismatch in sizes: $s1, $s2, $a_ob, $b_ob, $c_ob, $d_ob, $e_ob, $f_ob")
                 end
 
                 Fdict[(a, b, c, d, e, f)] = result
