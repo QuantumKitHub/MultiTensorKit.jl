@@ -39,6 +39,7 @@ end
 
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
 TensorKitSectors.BraidingStyle(::Type{A4Object}) = NoBraiding()
+TensorKitSectors.sectorscalartype(::Type{A4Object}) = ComplexF64
 
 function TensorKitSectors.:⊗(a::A4Object, b::A4Object)
     @assert a.j == b.i
@@ -280,7 +281,7 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
 
     i, j, k, l = a.i, a.j, b.j, c.j
     return get(_get_Fcache(I)[i, j, k, l],
-               (a.label, b.label, c.label, d.label, e.label, f.label)) do
+               (a.label, b.label, c.label, d.label, e.label, f.label)) do 
         return zeros(sectorscalartype(A4Object),
                      (Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f),
                       Nsymbol(a, f, d)))
