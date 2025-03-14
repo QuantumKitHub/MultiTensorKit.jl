@@ -101,31 +101,55 @@ end
 function extract_dual(::Type{A4Object})
     N = _get_Ncache(A4Object)
     ncats = size(N, 1)
-    return map(1:ncats) do i
+    Is = zeros(Int, ncats)
+    
+    map(1:ncats) do i
         Niii = N[i, i, i]
-        nobj = maximum(first, keys(Niii)) # this only works for fusion cats
+        nobji = maximum(first, keys(N[i, i, i]))
+        # want to return a leftone and rightone for each entry in multifusion cat
+        # leftone/rightone needs to at least be the unit object within a fusion cat
+        Is[i] = findfirst(1:nobji) do a
+            get(Niii, (a, a, a), 0) == 1 || return false # I x I -> I
+            for othera in 1:nobji
+                get(Niii, (othera, a, othera), 0) == 1 || return false # a x I -> a
+                get(Niii, (a, othera, othera), 0) == 1 || return false # I x a -> a
+            end
 
-        # find identity object:
-        # I x I -> I, a x I -> a, I x a -> a
-        I = findfirst(1:nobj) do u
-            get(Niii, (u, u, u), 0) == 1 || return false
-            for j in 1:nobj
-                get(Niii, (j, u, j), 0) == 1 || return false
-                get(Niii, (u, j, j), 0) == 1 || return false
+            # check leftone
+            map(1:ncats) do j
+                nobjj = maximum(first, keys(N[j, j, j]))
+                for b in 1:nobjj
+                    get(N[i, j, j], (a, b, b), 0) == 1 || return false # I = leftone(b)
+                end
+            end
+
+            # check rightone
+            map(1:ncats) do k
+                nobjk = maximum(first, keys(N[k, k, k]))
+                for c in 1:nobjk
+                    get(N[k, i, k], (c, a, c), 0) == 1 || return false # I = rightone(c)
+                end
             end
             return true
         end
-
-        # find duals
-        # a x abar -> I
-        duals = map(1:nobj) do j
-            return findfirst(1:nobj) do k
-                return get(Niii, (j, k, I), 0) == 1
+    end
+    
+    allduals = 0 .|> fill(x->Vector{Int}(), ncats, ncats) # ncats square matrix of vectors
+    map(1:ncats) do i
+        nobji = maximum(first, keys(N[i, i, i]))
+        map(1:ncats) do j
+            nobjj = maximum(first, keys(N[j, j, j]))
+        # the nested vectors contain the duals of the objects in 𝒞_ij, which are in C_ji 
+            Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> C_ii
+            Njij = N[j, i, j] # 𝒞_ji x 𝒞_ij -> C_jj
+            for i_ob in 1:nobji, j_ob in 1:nobjj
+                get(Niji, (i_ob, j_ob, Is[i]), 0) == 1 || continue # leftone(c_ij) ∈ c_ij x c_ji
+                get(Njij, (j_ob, i_ob, Is[j]), 0) == 1 || continue # rightone(c_ij) ∈ c_ji x c_ij
+                push!(allduals[i,j], j_ob)
             end
         end
-
-        return I, duals
     end
+    return Is, allduals
 end
 
 function Base.one(a::BimoduleSector)
