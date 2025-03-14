@@ -88,7 +88,6 @@ function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:A4Object}
     return get(_get_Ncache(I)[i, j, k], (a.label, b.label, c.label), 0)
 end
 
-# TODO: can we define dual for modules?
 const Dualcache = IdDict{Type{<:BimoduleSector},Tuple{Vector{Int64}, Matrix{Vector{Int64}}}}()
 
 function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
