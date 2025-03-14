@@ -11,7 +11,7 @@ I = A4Object
 end
 
 @testset "Fusion Category $i" for i in 1:12
-    objects = A4Object.(i, i, MultiTensorKit._get_dual_cache(I)[i][2])
+    objects = A4Object.(i, i, MultiTensorKit._get_dual_cache(I)[2][i,i])
 
     @testset "Basic properties" begin
         s = rand(objects, 3)
@@ -53,4 +53,14 @@ end
     end
 end
 
-#TODO: add tests for module categories
+@testset "A4 Category ($i, $j) units and duals" for i in 1:12, j in 1:12
+    Cij_obs = A4Object.(i, j, MultiTensorKit._get_dual_cache(I)[2][i,j])
+
+    s = rand(Cij_obs, 1)[1]
+    @test eval(Meta.parse(sprint(show, s))) == s
+    @test @constinferred(hash(s)) == hash(deepcopy(s))
+    @test i == j ? isone(@constinferred(one(s))) : (isone(@constinferred(leftone(s))) && isone(@constinferred(rightone(s))))
+    @constinferred dual(s)
+    @test dual(s) == A4Object(j, i, MultiTensorKit._get_dual_cache(I)[2][i,j][s.label]) 
+    @test dual(dual(s)) == s
+end
