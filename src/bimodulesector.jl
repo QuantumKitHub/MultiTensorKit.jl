@@ -261,7 +261,7 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
     return data_dict
 end
 
-# TODO: figure out correct Fcache type
+# TODO: do we want this type for Fcache?
 const Fcache = IdDict{Type{<:BimoduleSector},
                       Array{Dict{NTuple{4, Int64}, Dict{NTuple{6, Int64}, Array{ComplexF64, 4}}}}}()
 
@@ -280,10 +280,8 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
         throw(ArgumentError("invalid fusion channel"))
 
     i, j, k, l = a.i, a.j, b.j, c.j
-    return get(_get_Fcache(I)[i, j, k, l],
-               (a.label, b.label, c.label, d.label, e.label, f.label)) do 
-        return zeros(sectorscalartype(A4Object),
-                     (Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f),
-                      Nsymbol(a, f, d)))
+    colordict = _get_Fcache(I)[i][i, j, k, l]
+    return get(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) do 
+        return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
     end
 end
