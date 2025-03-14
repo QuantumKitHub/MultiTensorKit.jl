@@ -209,7 +209,7 @@ function extract_Fsymbol(::Type{A4Object})
         txt_string = read(filename, String)
         Farray_part = copy(readdlm(IOBuffer(txt_string))); # now a matrix with 16 columns
         Farray_part = convert_Fs(Farray_part)
-        return for (colors, colordict) in Farray_part
+        for (colors, colordict) in Farray_part
             i,j,k,l = colors
             Fdict = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
             for (labels, Fvals) in colordict
@@ -238,6 +238,7 @@ function extract_Fsymbol(::Type{A4Object})
 
                 Fdict[(a, b, c, d, e, f)] = result
             end
+            return Fdict
         end
     end
 end
