@@ -261,7 +261,7 @@ end
 
 # TODO: figure out correct Fcache type
 const Fcache = IdDict{Type{<:BimoduleSector},
-                      Array{Dict{NTuple{4, Int}, Dict{NTuple{6, Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}}}}()
+                                            Array{Dict{NTuple{6,Int},Array{ComplexF64,4}},4}}()
 
 function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
     global Fcache
