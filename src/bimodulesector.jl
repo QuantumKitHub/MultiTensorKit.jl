@@ -201,7 +201,7 @@ end
 #         end
 #     end
 # end
-#TODO: figure out missing Fsymbol
+
 function extract_Fsymbol(::Type{A4Object})
     return mapreduce((colordict, Fdict) -> cat(colordict, Fdict; dims=1), 1:12) do i
         filename = joinpath(artifact_path, "A4", "Fsymbol_$i.txt")
@@ -258,8 +258,9 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
     return data_dict
 end
 
+# TODO: figure out correct Fcache type
 const Fcache = IdDict{Type{<:BimoduleSector},
-                      Array{Dict{NTuple{6,Int},Array{ComplexF64,4}},4}}()
+                      Array{Dict{NTuple{4, Int}, Dict{NTuple{6, Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}}}}()
 
 function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
     global Fcache
