@@ -89,7 +89,7 @@ function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:A4Object}
 end
 
 # TODO: can we define dual for modules?
-const Dualcache = IdDict{Type{<:BimoduleSector},Vector{Tuple{Int,Vector{Int}}}}()
+const Dualcache = IdDict{Type{<:BimoduleSector},Tuple{Vector{Int64}, Matrix{Vector{Int64}}}}()
 
 function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
     global Dualcache
@@ -154,20 +154,19 @@ end
 
 function Base.one(a::BimoduleSector)
     a.i == a.j || error("don't know how to define one for modules")
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][1])
+    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
 function TensorKitSectors.leftone(a::BimoduleSector)
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][1])
+    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
 function TensorKitSectors.rightone(a::BimoduleSector)
-    return A4Object(a.j, a.j, _get_dual_cache(typeof(a))[a.j][1])
+    return A4Object(a.j, a.j, _get_dual_cache(typeof(a))[1][a.j])
 end
 
 function Base.conj(a::BimoduleSector)
-    a.i == a.j || error("don't know how to define dual for modules")
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][2][a.label])
+    return A4Object(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i,a.j][a.label])
 end
 
 # function extract_Fsymbol(::Type{A4Object})
