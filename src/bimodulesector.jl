@@ -166,6 +166,40 @@ function Base.conj(a::BimoduleSector)
     return A4Object(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i,a.j][a.label])
 end
 
+# function extract_Fsymbol(::Type{A4Object})
+#     return mapreduce((x, y) -> cat(x, y; dims=1), 1:12) do i
+#         filename = joinpath(artifact_path, "A4", "Fsymbol_$i.json")
+#         @assert isfile(filename) "cannot find $filename"
+#         json_string = read(filename, String)
+#         Farray_part = copy(JSON3.read(json_string)) # Dict with one entry, that entry has as value a Dict (a,b,c,d,e,f) of Dicts (re, im)
+#         return map(enumerate(Farray_part[Symbol(i)])) do (I, x)
+#             j, k, l = Tuple(CartesianIndices((12, 12, 12))[I])
+#             y = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
+#             for (key, v) in x
+#                 a, b, c, d, e, f = parse.(Int, split(string(key)[2:(end - 1)], ", "))
+#                 a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
+#                                                                 (k, l, c), (i, l, d),
+#                                                                 (i, k, e), (j, l, f)))
+#                 result = Array{ComplexF64,4}(undef,
+#                                              (Nsymbol(a_ob, b_ob, e_ob),
+#                                               Nsymbol(e_ob, c_ob, d_ob),
+#                                               Nsymbol(b_ob, c_ob, f_ob),
+#                                               Nsymbol(a_ob, f_ob, d_ob)))
+#                 #@show size(result), a_ob, b_ob, c_ob, d_ob, e_ob, f_ob, v
+#                 #@show result, v
+#                 s1 = length(result)
+#                 s2 = length(v)
+#                 @assert s1 == s2 "$s1, $s2, $a_ob, $b_ob, $c_ob, $d_ob, $e_ob, $f_ob, $v, $result"
+#                 map!(result, reshape(v, size(result))) do cmplxdict
+#                     return complex(cmplxdict[:re], cmplxdict[:im])
+#                 end
+
+#                 y[(a, b, c, d, e, f)] = result
+#             end
+#         end
+#     end
+# end
+
 function extract_Fsymbol(::Type{A4Object})
     return mapreduce((colordict, Fdict) -> cat(colordict, Fdict; dims=1), 1:12) do i
         filename = joinpath(artifact_path, "A4", "Fsymbol_$i.txt")
@@ -224,6 +258,7 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
     return data_dict
 end
 
+# TODO: do we want this type for Fcache?
 const Fcache = IdDict{Type{<:BimoduleSector},
                       Array{Dict{NTuple{4, Int64}, Dict{NTuple{6, Int64}, Array{ComplexF64, 4}}}}}()
 
