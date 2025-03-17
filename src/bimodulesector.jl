@@ -2,15 +2,13 @@ struct BimoduleSector{Name} <: Sector
     i::Int
     j::Int
     label::Int
+    function BimoduleSector{:A4}(i::Int, j::Int, label::Int)
+        i <= 12 && j <= 12 || throw(DomainError("object outside the matrix A4"))
+        return label <= _numlabels(BimoduleSector{:A4}, i, j) ? new{:A4}(i, j, label) : throw(DomainError("label outside category A4($i, $j)"))
+    end
 end
 BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
-#TODO: place bound on what BimoduleSectors can be made
-# currently you can define A4Object(anyint, anyint, anyint)
 const A4Object = BimoduleSector{:A4}
-# function A4Object(i::Int, j::Int, label::Int)
-#     i <= 12 && j <= 12 || throw(DomainError("object outside the matrix"))
-#     return BimoduleSector{A4Object}(i, j, label)
-# end
 
 # Utility implementations
 # -----------------------
@@ -25,7 +23,6 @@ end
 Base.IteratorSize(::Type{SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 
 # TODO: generalize?
-# TODO: numlabels?
 function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
     I > 12 * 12 && return nothing
     i, j = CartesianIndices((12, 12))[I].I
@@ -49,8 +46,8 @@ function TensorKitSectors.:⊗(a::A4Object, b::A4Object)
                     if (a_l == a.label && b_l == b.label)]
 end
 
-function _numlabels(::Type{A4Object}, i, j)
-    return Ncache = _get_Ncache(A4Object)
+function _numlabels(::Type{T}, i, j) where {T<:BimoduleSector}
+    return length(_get_dual_cache(T)[2][i,j])
 end
 
 # Data from files
