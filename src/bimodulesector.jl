@@ -26,13 +26,15 @@ Base.IteratorSize(::Type{SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
     I > 12 * 12 && return nothing
     i, j = CartesianIndices((12, 12))[I].I
-    maxlabel = numlabels(A4Object, i, j)
+    maxlabel = _numlabels(A4Object, i, j)
     return if label > maxlabel
         iterate(iter, (I + 1, 1))
     else
         A4Object(i, j, label), (I, label + 1)
     end
 end
+
+Base.length(::SectorValues{A4Object}) = sum(_numlabels(A4Object, i, j) for i in 1:12, j in 1:12) 
 
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
 TensorKitSectors.BraidingStyle(::Type{A4Object}) = NoBraiding()
