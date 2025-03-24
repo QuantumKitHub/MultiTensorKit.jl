@@ -250,3 +250,31 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
         return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
     end
 end
+
+
+# interface with TensorKit where necessary
+#-----------------------------------------
+
+function TensorKit.blocksectors(W::HomSpace{S}) where {S<:GradedSpace{A4Object}}
+    sectortype(W) === Trivial &&
+        return OneOrNoneIterator(dim(domain(W)) != 0 && dim(codomain(W)) != 0, Trivial())
+
+    codom = codomain(W)
+    dom = domain(W)
+    N₁ = length(codom)
+    N₂ = length(dom)
+    if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
+        # this is a problem in full contractions where the coloring outside is 𝒞
+        return NTuple{12, A4Object}(one(A4Object(i,i,1)) for i in 1:12) # have to return all units b/c no info on W in this case
+    elseif N₁ == 0
+        @assert N₂ != 0 "one of Type A4Object doesn't exist" 
+        return filter!(isone, collect(blocksectors(dom)))
+    elseif N₂ == 0
+        @assert N₁ != 0 "one of Type A4Object doesn't exist" 
+        return filter!(isone, collect(blocksectors(codom)))
+    elseif N₂ <= N₁ # this filter will keep the blocksectors of the domain which appear in the codomain as well
+        return filter!(c -> hasblock(codom, c), collect(blocksectors(dom)))
+    else
+        return filter!(c -> hasblock(dom, c), collect(blocksectors(codom)))
+    end
+end
