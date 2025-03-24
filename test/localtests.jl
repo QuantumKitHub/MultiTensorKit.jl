@@ -81,3 +81,62 @@ coldict = A[a.i][a.i, a.j, b.j, c.j]
 bla = get(coldict, (a.label, b.label, c.label, d.label, e.label, f.label)) do
         return coldict[(a.label, b.label, c.label, d.label, e.label, f.label)]
     end
+
+###### TensorKit stuff ######
+using MultiTensorKit
+using TensorKit
+using Test
+
+# 𝒞 x 𝒞 example
+
+obj = A4Object(2,2,1)
+obj2 = A4Object(2,2,2)
+sp = Vect[A4Object](obj=>1, obj2=>1)
+A = TensorMap(ones, ComplexF64, sp ⊗ sp ← sp ⊗ sp)
+transpose(A, (2,4,), (1,3,))
+
+# 𝒞 x ℳ example
+obj = A4Object(1,1,1)
+obj2 = A4Object(1,2,1)
+
+sp = Vect[A4Object](obj=>1)
+sp2 = Vect[A4Object](obj2=>1)
+@test_throws ArgumentError("invalid fusion channel") TensorMap(rand, ComplexF64, sp ⊗ sp2 ← sp)
+homspace = sp ⊗ sp2 ← sp2
+A = TensorMap(ones, ComplexF64, homspace)
+for sector in sectors(sp2)
+    @show sector
+end
+fusiontrees(A)
+permute(space(A),((1,),(3,2)))
+transpose(A, (1,2,), (3,)) == A 
+transpose(A, (3,1,), (2,))
+
+Aop = TensorMap(ones, ComplexF64, conj(sp2) ⊗ sp ← conj(sp2))
+transpose(Aop, (1,2,), (3,)) == Aop
+transpose(Aop, (1,), (3,2))
+
+@plansor Acont[a] := A[a b;b] # should not have data bc sp isn't the unit 
+
+spfix = Vect[A4Object](one(obj)=>1)
+Afix = TensorMap(ones, ComplexF64, spfix ⊗ sp2 ← sp2)
+@plansor Acontfix[a] := Afix[a b;b] # should have a fusion tree
+
+# completely off-diagonal example
+
+obj = A4Object(5, 4, 1)
+obj2 = A4Object(4, 5, 1)
+sp = Vect[A4Object](obj=>1)
+sp2 = Vect[A4Object](obj2=>1)
+conj(sp) == sp2 
+
+A = TensorMap(ones, ComplexF64, sp ⊗ sp2 ← sp ⊗ sp2)
+Aop = TensorMap(ones, ComplexF64, sp2 ⊗ sp ← sp2 ⊗ sp)
+
+At = transpose(A, (2,4,), (1,3,))
+Aopt = transpose(Aop, (2,4,), (1,3,))
+
+blocksectors(At) == blocksectors(Aop)
+blocksectors(Aopt) == blocksectors(A)
+
+@plansor Acont[] := A[a b;a b]
