@@ -140,3 +140,47 @@ blocksectors(At) == blocksectors(Aop)
 blocksectors(Aopt) == blocksectors(A)
 
 @plansor Acont[] := A[a b;a b]
+
+testsp = SU2Space(0=>1, 1=>1)
+
+
+
+# bram stuff
+
+for i in 1:12, j in 1:12
+    for a in A4Object.(i, j, MultiTensorKit._get_dual_cache(A4Object)[2][i,j])
+        F = Fsymbol(a, dual(a), a, a, leftone(a), rightone(a))[1,1,1,1]
+        isapprox(F, frobeniusschur(a) / dim(a); atol=1e-15) || @show a, F, frobeniusschur(a)/ dim(a) # check real
+        isreal(frobeniusschur(a)) || @show a, frobeniusschur(a)
+    end
+end
+
+for i in 1:12, j in 1:12 # 18a
+    i != j || continue
+    objsij = A4Object.(i, j, MultiTensorKit._get_dual_cache(A4Object)[2][i,j])
+    @assert all(dim(m) > 0 for m in objsij)
+end
+
+for i in 1:12, j in 1:12 # 18b
+    objsii = A4Object.(i, i, MultiTensorKit._get_dual_cache(A4Object)[2][i,i])
+    objsij = A4Object.(i, j, MultiTensorKit._get_dual_cache(A4Object)[2][i,j])
+
+    Ndict = Dict{Tuple{A4Object, A4Object, A4Object}, Int}()
+    for a in objsii, m in objsij
+        for n in a⊗m
+            Ndict[(a, m, n)] = Nsymbol(a, m, n)
+        end
+    end
+
+    for a in objsii, m in objsij
+        isapprox(dim(a)*dim(m), sum(Ndict[(a, m, n)]*dim(n) for n in a⊗m); atol=2e-9) || @show a, m
+    end
+end
+
+for i in 1:12, j in 1:12 # 18c
+    objsii = A4Object.(i, i, MultiTensorKit._get_dual_cache(A4Object)[2][i,i])
+    objsij = A4Object.(i, j, MultiTensorKit._get_dual_cache(A4Object)[2][i,j])
+    m_dimsum = sum(dim(m)^2 for m in objsij)
+    c_dimsum = sum(dim(c)^2 for c in objsii)
+    isapprox(m_dimsum, c_dimsum; atol=1e-8) || @show i, j, c_dimsum, m_dimsum
+end
