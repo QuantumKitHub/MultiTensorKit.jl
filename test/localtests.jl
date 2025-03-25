@@ -95,6 +95,9 @@ sp = Vect[A4Object](obj=>1, obj2=>1)
 A = TensorMap(ones, ComplexF64, sp ⊗ sp ← sp ⊗ sp)
 transpose(A, (2,4,), (1,3,))
 
+blocksectors(sp ⊗ sp)
+@plansor fullcont[] := A[a b;a b] # problem here is that fusiontrees for all 12 units are given
+
 # 𝒞 x ℳ example
 obj = A4Object(1,1,1)
 obj2 = A4Object(1,2,1)
@@ -104,9 +107,6 @@ sp2 = Vect[A4Object](obj2=>1)
 @test_throws ArgumentError("invalid fusion channel") TensorMap(rand, ComplexF64, sp ⊗ sp2 ← sp)
 homspace = sp ⊗ sp2 ← sp2
 A = TensorMap(ones, ComplexF64, homspace)
-for sector in sectors(sp2)
-    @show sector
-end
 fusiontrees(A)
 permute(space(A),((1,),(3,2)))
 transpose(A, (1,2,), (3,)) == A 
@@ -121,6 +121,10 @@ transpose(Aop, (1,), (3,2))
 spfix = Vect[A4Object](one(obj)=>1)
 Afix = TensorMap(ones, ComplexF64, spfix ⊗ sp2 ← sp2)
 @plansor Acontfix[a] := Afix[a b;b] # should have a fusion tree
+
+blocksectors(sp ⊗ sp2)
+A = TensorMap(ones, ComplexF64, sp ⊗ sp2 ← sp ⊗ sp2)
+@plansor fullcont[] := A[a b;a b] # same 12 fusiontrees problem
 
 # completely off-diagonal example
 
@@ -142,8 +146,15 @@ blocksectors(Aopt) == blocksectors(A)
 @plansor Acont[] := A[a b;a b]
 
 testsp = SU2Space(0=>1, 1=>1)
+Atest = TensorMap(ones, ComplexF64, testsp ⊗ testsp ← testsp ⊗ testsp)
+@plansor Aconttest[] := Atest[a b;a b]
 
 
+# 𝒞 x ℳ ← ℳ x 𝒟
+c = A4Object(1,1,1)
+m = A4Object(1,2,1)
+d = A4Object(2,2,1)
+W = Vect[A4Object](c=>1) ⊗ Vect[A4Object](m=>1) ← Vect[A4Object](m=>1) ⊗ Vect[A4Object](d=>1)
 
 # bram stuff
 
