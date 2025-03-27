@@ -246,6 +246,7 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
 
     i, j, k, l = a.i, a.j, b.j, c.j
     colordict = _get_Fcache(I)[i][i, j, k, l]
+    @show a, b, c, d, e, f
     return get(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) do 
         return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
     end
@@ -272,9 +273,19 @@ function TensorKit.blocksectors(W::HomSpace{S}) where {S<:GradedSpace{A4Object}}
     elseif N₂ == 0
         @assert N₁ != 0 "one of Type A4Object doesn't exist" 
         return filter!(isone, collect(blocksectors(codom)))
-    elseif N₂ <= N₁ # this filter will keep the blocksectors of the domain which appear in the codomain as well
+    elseif N₂ <= N₁ # keep intersection
         return filter!(c -> hasblock(codom, c), collect(blocksectors(dom)))
     else
         return filter!(c -> hasblock(dom, c), collect(blocksectors(codom)))
     end
 end
+
+function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T<:Number, S<:GradedSpace{A4Object}}
+    _vector = findall(!iszero, values(blocks(t))) # should have 0 or 1 elements, since only one of the blocks could be non-zero
+    if isempty(_vector)
+        return zero(scalartype(t))
+    end
+    return only(values(blocks(t))[only(_vector)])
+end
+
+# TODO: definitions for zero and oneunit of GradedSpace? dim?
