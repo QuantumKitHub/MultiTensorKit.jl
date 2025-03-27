@@ -143,7 +143,8 @@ Aopt = transpose(Aop, (2,4,), (1,3,))
 blocksectors(At) == blocksectors(Aop)
 blocksectors(Aopt) == blocksectors(A)
 
-@plansor Acont[] := A[a b;a b]
+@plansor Acont[] := A[a b;a b] # ignore this error for now
+@plansor Acont2[] := A[b a;b a]
 
 testsp = SU2Space(0=>1, 1=>1)
 Atest = TensorMap(ones, ComplexF64, testsp ⊗ testsp ← testsp ⊗ testsp)
@@ -195,3 +196,41 @@ for i in 1:12, j in 1:12 # 18c
     c_dimsum = sum(dim(c)^2 for c in objsii)
     isapprox(m_dimsum, c_dimsum; atol=1e-8) || @show i, j, c_dimsum, m_dimsum
 end
+
+############ MPSKit wow ############
+using MultiTensorKit
+using TensorKit
+using MPSKit, MPSKitModels
+C1 = A4Object(1,1,1)
+C0 = A4Object(1,1,4) # unit
+M = A4Object(1,2,1)
+D0 = A4Object(2,2,12) # unit
+D1 = A4Object(2,2,1)
+collect(D0 ⊗ D1)
+collect(D1 ⊗ D1)
+
+P = Vect[A4Object](D0 => 1, D1 => 1)
+h = TensorMap(ones, ComplexF64, P ⊗ P ← P ⊗ P)
+
+lattice = InfiniteChain(1)
+# @profview begin sample_rate = 0.0002
+#     for _ in 1:1
+#         LocalOperator(h, lattice[1], lattice[2]) 
+#     end
+# end
+
+op = LocalOperator(h, lattice[1], lattice[2])
+InfiniteMPOHamiltonian([P, P], [op])
+H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
+
+D = 2
+V = Vect[A4Object](M => D);
+inf_init = InfiniteMPS([P], [V])
+
+ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=200));
+expectation_value(ψ, H, envs)
+entropy(ψ)
+entanglement_spectrum(ψ)
+correlation_length(ψ)
+transfer_spectrum(ψ)
+norm(ψ)
