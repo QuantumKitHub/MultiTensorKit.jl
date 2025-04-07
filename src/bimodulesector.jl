@@ -246,10 +246,13 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
 
     i, j, k, l = a.i, a.j, b.j, c.j
     colordict = _get_Fcache(I)[i][i, j, k, l]
-    @show a, b, c, d, e, f
-    return get(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) do 
-        return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
-    end
+    # @show a, b, c, d, e, f
+    # return get(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) do 
+    #     return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
+    # end
+    return haskey(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) ?
+        colordict[(a.label, b.label, c.label, d.label, e.label, f.label)] : 
+        zeros(sectorscalartype(I), 1, 1, 1, 1) # quick fix to just return zeroes
 end
 
 
@@ -264,6 +267,7 @@ function TensorKit.blocksectors(W::HomSpace{S}) where {S<:GradedSpace{A4Object}}
     dom = domain(W)
     N₁ = length(codom)
     N₂ = length(dom)
+    @show N₁, N₂
     if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
         # this is a problem in full contractions where the coloring outside is 𝒞
         return NTuple{12, A4Object}(one(A4Object(i,i,1)) for i in 1:12) # have to return all units b/c no info on W in this case
