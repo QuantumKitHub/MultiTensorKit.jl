@@ -7,6 +7,9 @@ using DelimitedFiles
 using Artifacts
 using TensorKitSectors
 
+using BlockTensorKit
+import BlockTensorKit: SumSpace
+
 using TensorKit
 import TensorKit: hasblock
 
