@@ -259,15 +259,15 @@ end
 # interface with TensorKit where necessary
 #-----------------------------------------
 
-function TensorKit.blocksectors(W::HomSpace{S}) where {S<:GradedSpace{A4Object}}
+function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where 
+                                                            {S<:Union{GradedSpace{A4Object, NTuple{486, Int64}}, 
+                                                            SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}, N₁, N₂}
     sectortype(W) === Trivial &&
         return OneOrNoneIterator(dim(domain(W)) != 0 && dim(codomain(W)) != 0, Trivial())
 
     codom = codomain(W)
     dom = domain(W)
-    N₁ = length(codom)
-    N₂ = length(dom)
-    @show N₁, N₂
+    @info "in the correct blocksectors"
     if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
         # this is a problem in full contractions where the coloring outside is 𝒞
         return NTuple{12, A4Object}(one(A4Object(i,i,1)) for i in 1:12) # have to return all units b/c no info on W in this case
@@ -284,12 +284,13 @@ function TensorKit.blocksectors(W::HomSpace{S}) where {S<:GradedSpace{A4Object}}
     end
 end
 
-function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T<:Number, S<:GradedSpace{A4Object}}
-    _vector = findall(!iszero, values(blocks(t))) # should have 0 or 1 elements, since only one of the blocks could be non-zero
-    if isempty(_vector)
-        return zero(scalartype(t))
-    end
-    return only(values(blocks(t))[only(_vector)])
-end
+# function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T<:Number, S<:GradedSpace{A4Object}}
+#     @show t
+#     _vector = findall(!iszero, values(blocks(t))) # should have 0 or 1 elements, since only one of the blocks could be non-zero
+#     if isempty(_vector)
+#         return zero(scalartype(t))
+#     end
+#     return only(values(blocks(t))[only(_vector)])
+# end
 
 # TODO: definitions for zero and oneunit of GradedSpace? dim?
