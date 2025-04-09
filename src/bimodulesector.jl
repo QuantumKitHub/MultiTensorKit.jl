@@ -295,4 +295,9 @@ end
 #     return only(values(blocks(t))[only(_vector)])
 # end
 
-# TODO: definitions for zero and oneunit of GradedSpace? dim?
+# TODO: definitions for zero and oneunit of GradedSpace?
+
+function dim(V::GradedSpace{I, NTuple{486, Int64}}) where {I<:A4Object}
+    return reduce(+, dim(V, c) * dim(c) for c in sectors(V);
+                  init=zero(Float64))
+end

@@ -11,7 +11,7 @@ using BlockTensorKit
 import BlockTensorKit: SumSpace
 
 using TensorKit
-import TensorKit: hasblock
+import TensorKit: hasblock, dim
 
 include("bimodulesector.jl")
 
