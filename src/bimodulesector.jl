@@ -301,3 +301,20 @@ function dim(V::GradedSpace{I, NTuple{486, Int64}}) where {I<:A4Object}
     return reduce(+, dim(V, c) * dim(c) for c in sectors(V);
                   init=zero(Float64))
 end
+
+# limited oneunit 
+function Base.oneunit(S::GradedSpace{A4Object, NTuple{486, Int64}})
+    allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
+         throw(ArgumentError("sectors of $S are not all equal"))
+    first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
+    sector = one(first(sectors(S)))
+    return ℂ[A4Object](sector => 1)
+end
+
+function Base.oneunit(S::SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}) 
+    allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
+         throw(ArgumentError("sectors of $S are not all equal"))
+    first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
+    sector = one(first(sectors(S)))
+    return SumSpace(ℂ[A4Object](sector => 1))
+end
