@@ -271,35 +271,37 @@ momenta = range(0, 2π, 4)
 excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ, envs, sector=C0, num=1);
 
 # problem in QPA
-f1 = FusionTree{A4Object}((A4Object(1, 2, 1), A4Object(2, 1, 1), A4Object(1, 2, 1)), A4Object(1, 2, 1), (false, false, false), (A4Object(1, 1, 2),), (3, 2))
-f2 = FusionTree{A4Object}((A4Object(2, 1, 1), A4Object(1, 1, 4)), A4Object(2, 1, 1), (true, true), (), (1,))
-i = 2
-a = A4Object(1, 2, 1) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i-1]
-b = A4Object(2, 1, 1) # f2.uncoupled[1]
-c = A4Object(1, 1, 4) # f2.uncoupled[2]
-d = A4Object(1, 1, 2) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i]
-e = A4Object(1, 1, 1) # in a⊗b
-ep = A4Object(2, 1, 1) # f2.uncoupled[i]
+# f1 = FusionTree{A4Object}((A4Object(1, 2, 1), A4Object(2, 1, 1), A4Object(1, 2, 1)), A4Object(1, 2, 1), (false, false, false), (A4Object(1, 1, 2),), (3, 2))
+# f2 = FusionTree{A4Object}((A4Object(2, 1, 1), A4Object(1, 1, 4)), A4Object(2, 1, 1), (true, true), (), (1,))
+# i = 2
+# a = A4Object(1, 2, 1) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i-1]
+# b = A4Object(2, 1, 1) # f2.uncoupled[1]
+# c = A4Object(1, 1, 4) # f2.uncoupled[2]
+# d = A4Object(1, 1, 2) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i]
+# e = A4Object(1, 1, 1) # in a⊗b
+# ep = A4Object(2, 1, 1) # f2.uncoupled[i]
 
-Fs = MultiTensorKit._get_Fcache(A4Object)
-i,j,k,l = 1,2,1,1
-colordict = Fs[i][i,j,k,l]
-colordict[(1,1,4,2,1,1)]
-s1, s2, s3, s4 = Nsymbol(a,b,e), Nsymbol(e,c,d), Nsymbol(b,c,ep), Nsymbol(a,ep,d)
-size = [s1, s2, s3, s4]
+# Fs = MultiTensorKit._get_Fcache(A4Object)
+# i,j,k,l = 1,2,1,1
+# colordict = Fs[i][i,j,k,l]
+# colordict[(1,1,4,2,1,1)]
+# Fsymbol(a,b,c,d,e,ep)
+# s1, s2, s3, s4 = Nsymbol(a,b,e), Nsymbol(e,c,d), Nsymbol(b,c,ep), Nsymbol(a,ep,d)
+# size = [s1, s2, s3, s4]
 
-using BenchmarkTools
-@btime for i in 1:4
-    size[i] == 0 ? size[i] = 1 : nothing
-end
-@btime for i in findall(iszero, size)
-    size[i] = 1
-end
+# using BenchmarkTools
+# @btime for i in 1:4
+#     size[i] == 0 ? size[i] = 1 : nothing
+# end
+# @btime for i in findall(iszero, size)
+#     size[i] = 1
+# end
 
-size
-zeros(sectorscalartype(A4Object), size...)
+# size
+# zeros(sectorscalartype(A4Object), size...)
 
-
+# util = similar(ψ.AL[1], space(parent(H)[1],1)[1])
+# MPSKit.fill_data!(util, one)
 # finite stuff
 L = 6
 # lattice = FiniteChain(L)
