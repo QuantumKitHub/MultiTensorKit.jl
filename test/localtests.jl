@@ -213,24 +213,118 @@ P = Vect[A4Object](D0 => 1, D1 => 1)
 h = TensorMap(ones, ComplexF64, P ⊗ P ← P ⊗ P)
 
 lattice = InfiniteChain(1)
-# @profview begin sample_rate = 0.0002
-#     for _ in 1:1
-#         LocalOperator(h, lattice[1], lattice[2]) 
-#     end
-# end
-
-op = LocalOperator(h, lattice[1], lattice[2])
-InfiniteMPOHamiltonian([P, P], [op])
 H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
 
 D = 2
 V = Vect[A4Object](M => D);
 inf_init = InfiniteMPS([P], [V])
 
-ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=200));
+# (a, b, c, d, e, f) = (A4Object(2, 1, 1), A4Object(1, 2, 1), A4Object(2, 2, 11), A4Object(2, 2, 11), A4Object(2, 2, 9), A4Object(1, 2, 1))
+# Fsymbol(a,b,c,d,e,f)
+# zeros(ComplexF64, Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f), Nsymbol(a, f, d))
+
+# VUMPS
+ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=500));
 expectation_value(ψ, H, envs)
+
+# testing blocksectors 
+W = Vect[A4Object](A4Object(2, 2, 12)=>1) ← ProductSpace{GradedSpace{A4Object, NTuple{486, Int64}}, 0}() 
+W isa TensorMapSpace{GradedSpace{A4Object, NTuple{486, Int64}}}
+W isa HomSpace
+W isa HomSpace{S} where {S<:SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}
+W isa TensorMapSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}
+
+# this appears as well (N1=N2=0)
+W = ProductSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}, 0}() ← ProductSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}, 0}()
+typeof(W)
+W isa TensorMapSpace{S} where {S<:GradedSpace{A4Object, NTuple{486, Int64}}}
+W isa HomSpace{S} where {S<:GradedSpace{A4Object, NTuple{486, Int64}}}
+W isa HomSpace
+W isa TensorMapSpace
+
+W isa TensorMapSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}, 0, 0}
+W isa TensorMapSpace{GradedSpace{A4Object, NTuple{486, Int64}}, 0, 0}
+TensorMapSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}, 0, 0} <: TensorMapSpace{GradedSpace{A4Object, NTuple{486, Int64}}, N₁,N₂} where {N₁,N₂}
+W isa TensorSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}
+
+GradedSpace{A4Object, NTuple{486, Int64}} <: BlockTensorKit.SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}
+
 entropy(ψ)
 entanglement_spectrum(ψ)
-correlation_length(ψ)
-transfer_spectrum(ψ)
+transfer_spectrum(ψ,sector=C0)
+correlation_length(ψ,sector=C0)
 norm(ψ)
+
+#IDMRG
+
+ψ, envs = find_groundstate(inf_init, H, IDMRG(verbosity=3, tol=1e-8, maxiter=100));
+expectation_value(ψ, H, envs)
+
+inf_init2 = InfiniteMPS([P,P], [V,V])
+H2 = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(InfiniteChain(2)));
+ψ2, envs2 = find_groundstate(inf_init2, H2, IDMRG2(verbosity=3, tol=1e-8, maxiter=100));
+expectation_value(ψ2, H2, envs2)
+
+#QuasiParticleAnsatz
+
+momenta = range(0, 2π, 4)
+excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ, envs, sector=C0, num=1);
+
+# problem in QPA
+f1 = FusionTree{A4Object}((A4Object(1, 2, 1), A4Object(2, 1, 1), A4Object(1, 2, 1)), A4Object(1, 2, 1), (false, false, false), (A4Object(1, 1, 2),), (3, 2))
+f2 = FusionTree{A4Object}((A4Object(2, 1, 1), A4Object(1, 1, 4)), A4Object(2, 1, 1), (true, true), (), (1,))
+i = 2
+a = A4Object(1, 2, 1) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i-1]
+b = A4Object(2, 1, 1) # f2.uncoupled[1]
+c = A4Object(1, 1, 4) # f2.uncoupled[2]
+d = A4Object(1, 1, 2) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i]
+e = A4Object(1, 1, 1) # in a⊗b
+ep = A4Object(2, 1, 1) # f2.uncoupled[i]
+
+Fs = MultiTensorKit._get_Fcache(A4Object)
+i,j,k,l = 1,2,1,1
+colordict = Fs[i][i,j,k,l]
+colordict[(1,1,4,2,1,1)]
+s1, s2, s3, s4 = Nsymbol(a,b,e), Nsymbol(e,c,d), Nsymbol(b,c,ep), Nsymbol(a,ep,d)
+size = [s1, s2, s3, s4]
+
+using BenchmarkTools
+@btime for i in 1:4
+    size[i] == 0 ? size[i] = 1 : nothing
+end
+@btime for i in findall(iszero, size)
+    size[i] = 1
+end
+
+size
+zeros(sectorscalartype(A4Object), size...)
+
+
+# finite stuff
+L = 6
+# lattice = FiniteChain(L)
+# P = Vect[A4Object](D0 => 1, D1 => 1)
+# D = 2
+# V = Vect[A4Object](M => D)
+
+# fin_init = FiniteMPS(L, P, V, left=V, right=V)
+# Hfin = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
+# ψ, envs = find_groundstate(fin_init, Hfin, DMRG(verbosity=3, tol=1e-8, maxiter=100));
+# expectation_value(ψ, Hfin, envs)
+
+# entropy(ψ, round(Int, L/2))
+# entanglement_spectrum(ψ)
+# exact_diagonalization(Hfin; sector=D0)
+
+# ψ, envs = find_groundstate(fin_init, Hfin, DMRG2(verbosity=3, tol=1e-8, maxiter=100));
+# expectation_value(ψ, Hfin, envs)
+
+# entropy(ψ, round(Int, L/2))
+# entanglement_spectrum(ψ)
+
+# HfinPBC = periodic_boundary_conditions(Hfin,L);
+# ψ, envs = find_groundstate(fin_init, HfinPBC, DMRG(verbosity=3, tol=1e-8, maxiter=100));
+# expectation_value(ψ, HfinPBC, envs)
+
+# # excitations
+# excE, excqp = excitations(Hfin, QuasiparticleAnsatz(ishermitian=false), ψ, envs;sector=C0, num=1)
