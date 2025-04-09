@@ -226,7 +226,6 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
     return data_dict
 end
 
-# TODO: do we want this type for Fcache?
 const Fcache = IdDict{Type{<:BimoduleSector},
                       Array{Dict{NTuple{4, Int64}, Dict{NTuple{6, Int64}, Array{ComplexF64, 4}}}}}()
 
@@ -239,22 +238,25 @@ end
 
 function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
                                   f::I) where {I<:A4Object}
-    # TODO: should this error or return 0?
-    (a.j == b.i && b.j == c.i && a.i == d.i && c.j == d.j &&
-     a.i == e.i && b.j == e.j && f.i == a.j && f.j == c.j) ||
-        throw(ArgumentError("invalid fusion channel"))
+    # required to keep track of multiplicities where F-move is partially unallowed
+    # also deals with invalid fusion channels
+    Nsymbol(a, b, e) > 0 && Nsymbol(e, c, d) > 0 &&
+    Nsymbol(b, c, f) > 0 && Nsymbol(a, f, d) > 0 ||
+        return correct_zeros_F(a, b, c, d, e, f)
 
     i, j, k, l = a.i, a.j, b.j, c.j
     colordict = _get_Fcache(I)[i][i, j, k, l]
-    # @show a, b, c, d, e, f
-    # return get(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) do 
-    #     return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
-    # end
-    return haskey(colordict, (a.label, b.label, c.label, d.label, e.label, f.label)) ?
-        colordict[(a.label, b.label, c.label, d.label, e.label, f.label)] : 
-        zeros(sectorscalartype(I), 1, 1, 1, 1) # quick fix to just return zeroes
+    return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)] 
 end
 
+function correct_zeros_F(a::I, b::I, c::I, d::I, e::I,
+                        f::I) where {I<:BimoduleSector}
+    sizes = [Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f), Nsymbol(a, f, d)]
+    for i in findall(iszero, sizes)
+        sizes[i] = 1
+    end
+    return zeros(sectorscalartype(I), sizes...)
+end
 
 # interface with TensorKit where necessary
 #-----------------------------------------
@@ -267,7 +269,7 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
 
     codom = codomain(W)
     dom = domain(W)
-    @info "in the correct blocksectors"
+    # @info "in the correct blocksectors"
     if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
         # this is a problem in full contractions where the coloring outside is 𝒞
         return NTuple{12, A4Object}(one(A4Object(i,i,1)) for i in 1:12) # have to return all units b/c no info on W in this case
