@@ -305,18 +305,18 @@ function Base.oneunit(S::GradedSpace{<:BimoduleSector})
     return ℂ[A4Object](sector => 1)
 end
 
-function Base.oneunit(S::SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}) 
-    allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
-         throw(ArgumentError("sectors of $S are not all equal"))
-    first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
-    sector = one(first(sectors(S)))
-    return SumSpace(ℂ[A4Object](sector => 1))
-end
-
-# function Base.oneunit(S::SumSpace{GradedSpace{<:BimoduleSector}}) 
+# function Base.oneunit(S::SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}) 
 #     allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
 #          throw(ArgumentError("sectors of $S are not all equal"))
 #     first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
 #     sector = one(first(sectors(S)))
 #     return SumSpace(ℂ[A4Object](sector => 1))
 # end
+
+function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}}) 
+    allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
+         throw(ArgumentError("sectors of $S are not all equal"))
+    first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
+    sector = one(first(sectors(S)))
+    return SumSpace(ℂ[A4Object](sector => 1))
+end
