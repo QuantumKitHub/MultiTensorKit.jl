@@ -302,31 +302,39 @@ excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ
 
 # util = similar(ψ.AL[1], space(parent(H)[1],1)[1])
 # MPSKit.fill_data!(util, one)
+
+# quick test on complex f symbols and dimensions
+testp = Vect[A4Object](one(A4Object(i,i,1)) => 1 for i in 1:12)
+dim(testp)
+
 # finite stuff
 L = 6
-# lattice = FiniteChain(L)
-# P = Vect[A4Object](D0 => 1, D1 => 1)
-# D = 2
-# V = Vect[A4Object](M => D)
+lattice = FiniteChain(L)
+P = Vect[A4Object](D0 => 1, D1 => 1)
+D = 2
+V = Vect[A4Object](M => D)
 
-# fin_init = FiniteMPS(L, P, V, left=V, right=V)
-# Hfin = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
-# ψ, envs = find_groundstate(fin_init, Hfin, DMRG(verbosity=3, tol=1e-8, maxiter=100));
-# expectation_value(ψ, Hfin, envs)
+fin_init = FiniteMPS(L, P, V, left=V, right=V)
+Hfin = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
+ψfin, envsfin = find_groundstate(fin_init, Hfin, DMRG(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
+expectation_value(ψfin, Hfin, envsfin) / (L-1)
 
-# entropy(ψ, round(Int, L/2))
-# entanglement_spectrum(ψ)
-# exact_diagonalization(Hfin; sector=D0)
+entropy(ψfin, round(Int, L/2))
+entanglement_spectrum(ψfin, round(Int, L/2))
+Es, states, convhist = exact_diagonalization(Hfin; sector=D0);
+Es / (L-1)
 
-# ψ, envs = find_groundstate(fin_init, Hfin, DMRG2(verbosity=3, tol=1e-8, maxiter=100));
-# expectation_value(ψ, Hfin, envs)
+ψfin2, envsfin2 = find_groundstate(fin_init, Hfin, DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
+expectation_value(ψfin2, Hfin, envsfin2) / (L-1)
 
-# entropy(ψ, round(Int, L/2))
-# entanglement_spectrum(ψ)
+entropy(ψfin2, round(Int, L/2))
+entanglement_spectrum(ψfin2)
 
-# HfinPBC = periodic_boundary_conditions(Hfin,L);
-# ψ, envs = find_groundstate(fin_init, HfinPBC, DMRG(verbosity=3, tol=1e-8, maxiter=100));
-# expectation_value(ψ, HfinPBC, envs)
+S = left_virtualspace(Hfin, 1)
+oneunit(S)
+eltype(S)
+oneunit(eltype(S)) # problematic
 
-# # excitations
-# excE, excqp = excitations(Hfin, QuasiparticleAnsatz(ishermitian=false), ψ, envs;sector=C0, num=1)
+# excitations
+excEfin, excqpfin = excitations(Hfin, QuasiparticleAnsatz(ishermitian=false), ψfin, envsfin;sector=C0, num=1);
+excEfin
