@@ -76,6 +76,7 @@ const Ncache = IdDict{Type{<:BimoduleSector},Array{Dict{NTuple{3,Int},Int},3}}()
 function _get_Ncache(::Type{T}) where {T<:BimoduleSector}
     global Ncache
     return get!(Ncache, T) do
+        @debug "loading Nsymbol cache for $T"
         return extract_Nsymbol(T)
     end
 end
@@ -93,6 +94,7 @@ const Dualcache = IdDict{Type{<:BimoduleSector},Tuple{Vector{Int64}, Matrix{Vect
 function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
     global Dualcache
     return get!(Dualcache, T) do
+        @debug "loading dual cache for $T"
         return extract_dual(T)
     end
 end
@@ -169,45 +171,30 @@ function Base.conj(a::BimoduleSector)
 end
 
 function extract_Fsymbol(::Type{A4Object})
-    return mapreduce((colordict, Fdict) -> cat(colordict, Fdict; dims=1), 1:12) do i
+    result = Dict{NTuple{4,Int},Dict{NTuple{6,Int},Array{ComplexF64,4}}}()
+    for i in 1:12
         filename = joinpath(artifact_path, "A4", "Fsymbol_$i.txt")
+        @debug "loading $filename"
         @assert isfile(filename) "cannot find $filename"
-        txt_string = read(filename, String)
-        Farray_part = copy(readdlm(IOBuffer(txt_string))); # now a matrix with 16 columns
-        Farray_part = convert_Fs(Farray_part)
-        dict_data = Iterators.map(Farray_part) do (colors, colordict)
-            i,j,k,l = colors
-            Fdict = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
-            for (labels, Fvals) in colordict
-                a, b, c, d, e, f = labels
+        Farray_part = readdlm(filename)
+        for ((i, j, k, l), colordict) in convert_Fs(Farray_part)
+            result[(i, j, k, l)] = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
+            for ((a, b, c, d, e, f), Fvals) in colordict
                 a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
                                                                 (k, l, c), (i, l, d),
                                                                 (i, k, e), (j, l, f)))
-                result = Array{ComplexF64,4}(undef,
-                                             (Nsymbol(a_ob, b_ob, e_ob),
-                                              Nsymbol(e_ob, c_ob, d_ob),
-                                              Nsymbol(b_ob, c_ob, f_ob),
-                                              Nsymbol(a_ob, f_ob, d_ob)))
-
-                 # due to sparse data, some Fvals are missing and we need to fill in zeros
-                    # error("Mismatch in sizes: $a_ob, $b_ob, $c_ob, $d_ob, $e_ob, $f_ob")
-                for index in CartesianIndices(result)
-                    if index ∉ [first(ind) for ind in Fvals] #wrong condition
-                        push!(Fvals, index => ComplexF64(0))
-                    end
+                result[(i, j, k, l)][(a, b, c, d, e, f)] = zeros(ComplexF64,
+                                                                 Nsymbol(a_ob, b_ob, e_ob),
+                                                                 Nsymbol(e_ob, c_ob, d_ob),
+                                                                 Nsymbol(b_ob, c_ob, f_ob),
+                                                                 Nsymbol(a_ob, f_ob, d_ob))
+                for (I, v) in Fvals
+                    result[(i, j, k, l)][(a, b, c, d, e, f)][I] = v
                 end
-                # s1, s2 = length(result), length(Fvals)
-                # @assert s1 == s2 "$a_ob, $b_ob, $c_ob, $d_ob, $e_ob, $f_ob, $Fvals, $result"
-                map!(result, reshape(Fvals, size(result))) do pair
-                    return pair[2]
-                end
-
-                Fdict[(a, b, c, d, e, f)] = result
             end
-            return colors => Fdict
         end
-        return Dict(dict_data)
     end
+    return result
 end
 
 function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with 16 columns
@@ -216,9 +203,8 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
     # a Dict with keys (a,b,c,d,e,f) and vals 
     # a pair of (mu, nu, rho, sigma) and the F value
     for row in eachrow(Farray_part)
-        row = string.(split(string(row)[2:(end - 1)], ", "))
-        i, j, k, l, a, b, c, d, e, f, mu, nu, rho, sigma = Int.(parse.(Float64, row[1:14]))
-        v = complex(parse.(Float64, row[15:16])...)
+        i, j, k, l, a, b, c, d, e, f, mu, nu, rho, sigma = Int.(@view(row[1:14]))
+        v = complex(row[15], row[16])
         colordict = get!(data_dict, (i,j,k,l), Dict{NTuple{6,Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}())
         Fdict = get!(colordict, (a, b, c, d, e, f), Vector{Pair{CartesianIndex{4}, ComplexF64}}())
         push!(Fdict, CartesianIndex(mu, nu, rho, sigma) => v)
@@ -227,11 +213,12 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
 end
 
 const Fcache = IdDict{Type{<:BimoduleSector},
-                      Array{Dict{NTuple{4, Int64}, Dict{NTuple{6, Int64}, Array{ComplexF64, 4}}}}}()
+                      Dict{NTuple{4,Int64},Dict{NTuple{6,Int64},Array{ComplexF64,4}}}}()
 
 function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
     global Fcache
     return get!(Fcache, T) do
+        @debug "loading Fsymbol cache for $T"
         return extract_Fsymbol(T)
     end
 end
@@ -240,22 +227,17 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
                                   f::I) where {I<:A4Object}
     # required to keep track of multiplicities where F-move is partially unallowed
     # also deals with invalid fusion channels
-    Nsymbol(a, b, e) > 0 && Nsymbol(e, c, d) > 0 &&
-    Nsymbol(b, c, f) > 0 && Nsymbol(a, f, d) > 0 ||
-        return correct_zeros_F(a, b, c, d, e, f)
+    Nabe = Nsymbol(a, b, e)
+    Necd = Nsymbol(e, c, d)
+    Nbcf = Nsymbol(b, c, f)
+    Nafd = Nsymbol(a, f, d)
+
+    Nabe > 0 && Necd > 0 && Nbcf > 0 && Nafd > 0 ||
+        return zeros(sectorscalartype(I), Nabe, Necd, Nbcf, Nafd)
 
     i, j, k, l = a.i, a.j, b.j, c.j
-    colordict = _get_Fcache(I)[i][i, j, k, l]
+    colordict = _get_Fcache(I)[i, j, k, l]
     return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)] 
-end
-
-function correct_zeros_F(a::I, b::I, c::I, d::I, e::I,
-                        f::I) where {I<:BimoduleSector}
-    sizes = [Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f), Nsymbol(a, f, d)]
-    for i in findall(iszero, sizes)
-        sizes[i] = 1
-    end
-    return zeros(sectorscalartype(I), sizes...)
 end
 
 # interface with TensorKit where necessary
