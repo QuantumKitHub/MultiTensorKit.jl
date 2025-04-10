@@ -294,7 +294,10 @@ end
 
 # TODO: definition for zero of GradedSpace?
 
-dim(V::GradedSpace{<:BimoduleSector}) = reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(Float64))
+function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
+    T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
+    return reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(T))
+end
 
 # limited oneunit 
 function Base.oneunit(S::GradedSpace{<:BimoduleSector})
