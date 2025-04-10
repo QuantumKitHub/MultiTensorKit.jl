@@ -264,9 +264,6 @@ end
 function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where 
                                                             {S<:Union{GradedSpace{A4Object, NTuple{486, Int64}}, 
                                                             SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}, N₁, N₂}
-    sectortype(W) === Trivial &&
-        return OneOrNoneIterator(dim(domain(W)) != 0 && dim(codomain(W)) != 0, Trivial())
-
     codom = codomain(W)
     dom = domain(W)
     # @info "in the correct blocksectors"
@@ -295,7 +292,7 @@ end
 #     return only(values(blocks(t))[only(_vector)])
 # end
 
-# TODO: definitions for zero and oneunit of GradedSpace?
+# TODO: definition for zero/one of GradedSpace?
 
 function dim(V::GradedSpace{I, NTuple{486, Int64}}) where {I<:A4Object}
     return reduce(+, dim(V, c) * dim(c) for c in sectors(V);
