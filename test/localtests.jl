@@ -270,39 +270,6 @@ expectation_value(ψ2, H2, envs2)
 momenta = range(0, 2π, 4)
 excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ, envs, sector=C0, num=1);
 
-# problem in QPA
-# f1 = FusionTree{A4Object}((A4Object(1, 2, 1), A4Object(2, 1, 1), A4Object(1, 2, 1)), A4Object(1, 2, 1), (false, false, false), (A4Object(1, 1, 2),), (3, 2))
-# f2 = FusionTree{A4Object}((A4Object(2, 1, 1), A4Object(1, 1, 4)), A4Object(2, 1, 1), (true, true), (), (1,))
-# i = 2
-# a = A4Object(1, 2, 1) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i-1]
-# b = A4Object(2, 1, 1) # f2.uncoupled[1]
-# c = A4Object(1, 1, 4) # f2.uncoupled[2]
-# d = A4Object(1, 1, 2) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i]
-# e = A4Object(1, 1, 1) # in a⊗b
-# ep = A4Object(2, 1, 1) # f2.uncoupled[i]
-
-# Fs = MultiTensorKit._get_Fcache(A4Object)
-# i,j,k,l = 1,2,1,1
-# colordict = Fs[i][i,j,k,l]
-# colordict[(1,1,4,2,1,1)]
-# Fsymbol(a,b,c,d,e,ep)
-# s1, s2, s3, s4 = Nsymbol(a,b,e), Nsymbol(e,c,d), Nsymbol(b,c,ep), Nsymbol(a,ep,d)
-# size = [s1, s2, s3, s4]
-
-# using BenchmarkTools
-# @btime for i in 1:4
-#     size[i] == 0 ? size[i] = 1 : nothing
-# end
-# @btime for i in findall(iszero, size)
-#     size[i] = 1
-# end
-
-# size
-# zeros(sectorscalartype(A4Object), size...)
-
-# util = similar(ψ.AL[1], space(parent(H)[1],1)[1])
-# MPSKit.fill_data!(util, one)
-
 # quick test on complex f symbols and dimensions
 testp = Vect[A4Object](one(A4Object(i,i,1)) => 1 for i in 1:12)
 dim(testp)
@@ -314,9 +281,10 @@ P = Vect[A4Object](D0 => 1, D1 => 1)
 D = 2
 V = Vect[A4Object](M => D)
 
+dmrgalg = DMRG(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
 fin_init = FiniteMPS(L, P, V, left=V, right=V)
 Hfin = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
-ψfin, envsfin = find_groundstate(fin_init, Hfin, DMRG(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
+ψfin, envsfin = find_groundstate(fin_init, Hfin, dmrgalg);
 expectation_value(ψfin, Hfin, envsfin) / (L-1)
 
 entropy(ψfin, round(Int, L/2))
@@ -324,11 +292,13 @@ entanglement_spectrum(ψfin, round(Int, L/2))
 Es, states, convhist = exact_diagonalization(Hfin; sector=D0);
 Es / (L-1)
 
-ψfin2, envsfin2 = find_groundstate(fin_init, Hfin, DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
+#DMRG2 weird real data incompatibility with sector type A4Object
+dmrg2alg = DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
+ψfin2, envsfin2 = find_groundstate(fin_init, Hfin, dmrg2alg);
 expectation_value(ψfin2, Hfin, envsfin2) / (L-1)
 
 entropy(ψfin2, round(Int, L/2))
-entanglement_spectrum(ψfin2)
+entanglement_spectrum(ψfin2, round(Int, L/2))
 
 S = left_virtualspace(Hfin, 1)
 oneunit(S)
@@ -338,3 +308,11 @@ oneunit(eltype(S)) # problematic
 # excitations
 excEfin, excqpfin = excitations(Hfin, QuasiparticleAnsatz(ishermitian=false), ψfin, envsfin;sector=C0, num=1);
 excEfin
+
+excFIN, excqpFIN = excitations(Hfin, FiniteExcited(;gsalg=DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))), ψfin;num=1);
+excFIN
+
+# changebonds test
+dim(left_virtualspace(ψ, 1))
+ψch, envsch = changebonds(ψ, H, OptimalExpand(; trscheme=truncerr(1e-3)), envs)
+dim(left_virtualspace(ψch, 1))
