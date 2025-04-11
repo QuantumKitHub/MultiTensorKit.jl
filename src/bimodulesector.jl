@@ -216,9 +216,8 @@ function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with
     # a Dict with keys (a,b,c,d,e,f) and vals 
     # a pair of (mu, nu, rho, sigma) and the F value
     for row in eachrow(Farray_part)
-        row = string.(split(string(row)[2:(end - 1)], ", "))
-        i, j, k, l, a, b, c, d, e, f, mu, nu, rho, sigma = Int.(parse.(Float64, row[1:14]))
-        v = complex(parse.(Float64, row[15:16])...)
+        i, j, k, l, a, b, c, d, e, f, mu, nu, rho, sigma = Int.(row[1:14])
+        v = complex(row[15:16]...)
         colordict = get!(data_dict, (i,j,k,l), Dict{NTuple{6,Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}())
         Fdict = get!(colordict, (a, b, c, d, e, f), Vector{Pair{CartesianIndex{4}, ComplexF64}}())
         push!(Fdict, CartesianIndex(mu, nu, rho, sigma) => v)
