@@ -293,7 +293,7 @@ end
 
 # TODO: definition for zero of GradedSpace?
 
-function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
+function dim(V::GradedSpace{<:BimoduleSector})
     T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
     return reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(T))
 end
@@ -321,4 +321,30 @@ function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
     sector = one(first(sectors(S)))
     return SumSpace(ℂ[A4Object](sector => 1))
+end
+
+# maybe from the homspace
+function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P));
+    conj::Bool=false, dual::Bool=false) where {i,V<:GradedSpace{<:I}, N} where {I<:BimoduleSector}
+    #possible change to rightone of correct space for N = 0
+    u = N > 0 ? oneunit(P[1]) : error("no unit object in this space")
+    if dual
+        u = TensorKit.dual(u)
+    end
+    if conj
+        u = TensorKit.conj(u)
+    end
+    return ProductSpace(TupleTools.insertafter(P.spaces, i, (u,)))
+end
+
+function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P) + 1);
+                        conj::Bool=false, dual::Bool=false) where {i,V<:GradedSpace{<:I}, N} where {I<:BimoduleSector}
+    u = N > 0 ? oneunit(P[1]) : error("no unit object in this space")
+    if dual
+        u = TensorKit.dual(u)
+    end
+    if conj
+        u = TensorKit.conj(u)
+    end
+    return ProductSpace(TupleTools.insertafter(P.spaces, i - 1, (u,)))
 end
