@@ -45,10 +45,20 @@ end
             end
         end
     end
+end
 
-    @testset "Pentagon equation" begin
-        for a in objects, b in objects, c in objects, d in objects
-            @test pentagon_equation(a, b, c, d; atol=1e-9, rtol=1e-9) # ill-defined for same reason
+@testset "Pentagon equation" begin
+    objects = collect(values(A4Object))
+    for a in objects
+        for b in objects
+            a.j == b.i || continue # skip if not compatible
+            for c in objects
+                b.j == c.i || continue # skip if not compatible
+                for d in objects
+                    c.j == d.i || continue # skip if not compatible
+                    @test pentagon_equation(a, b, c, d; atol=1e-9, rtol=1e-9) # ill-defined for same reason
+                end
+            end
         end
     end
 end
