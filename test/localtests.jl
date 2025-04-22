@@ -270,42 +270,10 @@ expectation_value(ψ2, H2, envs2)
 momenta = range(0, 2π, 4)
 excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ, envs, sector=C0, num=1);
 
-# problem in QPA
-# f1 = FusionTree{A4Object}((A4Object(1, 2, 1), A4Object(2, 1, 1), A4Object(1, 2, 1)), A4Object(1, 2, 1), (false, false, false), (A4Object(1, 1, 2),), (3, 2))
-# f2 = FusionTree{A4Object}((A4Object(2, 1, 1), A4Object(1, 1, 4)), A4Object(2, 1, 1), (true, true), (), (1,))
-# i = 2
-# a = A4Object(1, 2, 1) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i-1]
-# b = A4Object(2, 1, 1) # f2.uncoupled[1]
-# c = A4Object(1, 1, 4) # f2.uncoupled[2]
-# d = A4Object(1, 1, 2) # (f1.uncoupled[1], f1.innerlines..., f1.coupled)[i]
-# e = A4Object(1, 1, 1) # in a⊗b
-# ep = A4Object(2, 1, 1) # f2.uncoupled[i]
-
-# Fs = MultiTensorKit._get_Fcache(A4Object)
-# i,j,k,l = 1,2,1,1
-# colordict = Fs[i][i,j,k,l]
-# colordict[(1,1,4,2,1,1)]
-# Fsymbol(a,b,c,d,e,ep)
-# s1, s2, s3, s4 = Nsymbol(a,b,e), Nsymbol(e,c,d), Nsymbol(b,c,ep), Nsymbol(a,ep,d)
-# size = [s1, s2, s3, s4]
-
-# using BenchmarkTools
-# @btime for i in 1:4
-#     size[i] == 0 ? size[i] = 1 : nothing
-# end
-# @btime for i in findall(iszero, size)
-#     size[i] = 1
-# end
-
-# size
-# zeros(sectorscalartype(A4Object), size...)
-
-# util = similar(ψ.AL[1], space(parent(H)[1],1)[1])
-# MPSKit.fill_data!(util, one)
-
 # quick test on complex f symbols and dimensions
 testp = Vect[A4Object](one(A4Object(i,i,1)) => 1 for i in 1:12)
 dim(testp)
+oneunit(testp)
 
 # finite stuff
 L = 6
@@ -314,9 +282,11 @@ P = Vect[A4Object](D0 => 1, D1 => 1)
 D = 2
 V = Vect[A4Object](M => D)
 
+dmrgalg = DMRG(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
 fin_init = FiniteMPS(L, P, V, left=V, right=V)
 Hfin = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
-ψfin, envsfin = find_groundstate(fin_init, Hfin, DMRG(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
+open_boundary_conditions(H, L) == Hfin
+ψfin, envsfin = find_groundstate(fin_init, Hfin, dmrgalg);
 expectation_value(ψfin, Hfin, envsfin) / (L-1)
 
 entropy(ψfin, round(Int, L/2))
@@ -324,11 +294,13 @@ entanglement_spectrum(ψfin, round(Int, L/2))
 Es, states, convhist = exact_diagonalization(Hfin; sector=D0);
 Es / (L-1)
 
-ψfin2, envsfin2 = find_groundstate(fin_init, Hfin, DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
+#DMRG2 weird real data incompatibility with sector type A4Object
+dmrg2alg = DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
+ψfin2, envsfin2 = find_groundstate(fin_init, Hfin, dmrg2alg);
 expectation_value(ψfin2, Hfin, envsfin2) / (L-1)
 
 entropy(ψfin2, round(Int, L/2))
-entanglement_spectrum(ψfin2)
+entanglement_spectrum(ψfin2, round(Int, L/2))
 
 S = left_virtualspace(Hfin, 1)
 oneunit(S)
@@ -338,3 +310,92 @@ oneunit(eltype(S)) # problematic
 # excitations
 excEfin, excqpfin = excitations(Hfin, QuasiparticleAnsatz(ishermitian=false), ψfin, envsfin;sector=C0, num=1);
 excEfin
+
+excFIN, excqpFIN = excitations(Hfin, FiniteExcited(;gsalg=DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))), ψfin;num=1);
+excFIN
+
+# changebonds test
+dim(left_virtualspace(ψ, 1))
+ψch, envsch = changebonds(ψ, H, OptimalExpand(; trscheme=truncerr(1e-3)), envs)
+dim(left_virtualspace(ψch, 1))
+
+# time evolution
+ψt, envst = timestep(ψ, H, 10, 1, TDVP(integrator=MPSKit.Defaults.alg_expsolve(; ishermitian=false)), envs);
+et = expectation_value(ψt, H, envst) 
+e = expectation_value(ψ, H, envs)
+isapprox(et, e*exp(-1im * 10 * e); atol=1e-1) # not hermitian
+
+
+# testing InfiniteMPOHamiltonian and FiniteMPOHamiltonian constructor not relying on MPSKitModels
+function S_x(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
+    return if spin == 1 // 2
+        TensorMap(T[0 1; 1 0], ℂ^2 ← ℂ^2)
+    elseif spin == 1
+        TensorMap(T[0 1 0; 1 0 1; 0 1 0], ℂ^3 ← ℂ^3) / sqrt(2)
+    else
+        throw(ArgumentError("spin $spin not supported"))
+    end
+end
+function S_y(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
+    return if spin == 1 // 2
+        TensorMap(T[0 -im; im 0], ℂ^2 ← ℂ^2)
+    elseif spin == 1
+        TensorMap(T[0 -im 0; im 0 -im; 0 im 0], ℂ^3 ← ℂ^3) / sqrt(2)
+    else
+        throw(ArgumentError("spin $spin not supported"))
+    end
+end
+function S_z(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
+    return if spin == 1 // 2
+        TensorMap(T[1 0; 0 -1], ℂ^2 ← ℂ^2)
+    elseif spin == 1
+        TensorMap(T[1 0 0; 0 0 0; 0 0 -1], ℂ^3 ← ℂ^3)
+    else
+        throw(ArgumentError("spin $spin not supported"))
+    end
+end
+function S_xx(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
+    return S_x(Trivial, T; spin) ⊗ S_x(Trivial, T; spin)
+end
+function S_yy(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
+    return S_y(Trivial, T; spin) ⊗ S_y(Trivial, T; spin)
+end
+function S_zz(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
+    return S_z(Trivial, T; spin) ⊗ S_z(Trivial, T; spin)
+end
+
+function transverse_field_isingg(; g=1.0, L=Inf)
+    X = S_x(; spin=1 // 2)
+    ZZ = S_zz(; spin=1 // 2)
+    E = TensorMap(ComplexF64[1 0; 0 1], ℂ^2 ← ℂ^2)
+
+    # lattice = L == Inf ? PeriodicVector([ℂ^2]) : fill(ℂ^2, L)
+    if L == Inf
+        lattice = PeriodicArray([ℂ^2])
+        return InfiniteMPOHamiltonian(lattice,
+                                      (i, i + 1) => -(ZZ + (g / 2) * (X ⊗ E + E ⊗ X))
+                                      for i in 1:1)
+        # return MPOHamiltonian(-ZZ - (g / 2) * (X ⊗ E + E ⊗ X))
+    else
+        lattice = fill(ℂ^2, L)
+        return FiniteMPOHamiltonian(lattice,
+                                    (i, i + 1) => -(ZZ + (g / 2) * (X ⊗ E + E ⊗ X))
+                                    for i in 1:(L - 1)) #+
+        # FiniteMPOHamiltonian(lattice, (i,) => -g * X for i in 1:L)
+    end
+
+    H = S_zz(; spin=1 // 2) + (g / 2) * (X ⊗ E + E ⊗ X)
+    return if L == Inf
+        MPOHamiltonian(H)
+    else
+        FiniteMPOHamiltonian(fill(ℂ^2, L), (i, i + 1) => H for i in 1:(L - 1))
+    end
+    return MPOHamiltonian(-H)
+end
+
+
+transverse_field_isingg(; g=1.0, L=3)
+sp = Vect[FibonacciAnyon](:I=>1, :τ => 1)
+t = TensorMap(ones, ComplexF64, sp ← sp)
+InfiniteMPOHamiltonian(PeriodicArray([sp]), i => t for i in 1:1)
+H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(InfiniteChain(1)));

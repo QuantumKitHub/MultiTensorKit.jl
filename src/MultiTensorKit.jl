@@ -7,6 +7,9 @@ using DelimitedFiles
 using Artifacts
 using TensorKitSectors
 
+using TupleTools
+import TupleTools: insertafter
+
 using BlockTensorKit
 import BlockTensorKit: SumSpace
 

@@ -4,7 +4,8 @@ struct BimoduleSector{Name} <: Sector
     label::Int
     function BimoduleSector{:A4}(i::Int, j::Int, label::Int)
         i <= 12 && j <= 12 || throw(DomainError("object outside the matrix A4"))
-        return label <= _numlabels(BimoduleSector{:A4}, i, j) ? new{:A4}(i, j, label) : throw(DomainError("label outside category A4($i, $j)"))
+        return label <= _numlabels(BimoduleSector{:A4}, i, j) ? new{:A4}(i, j, label) :
+               throw(DomainError("label outside category A4($i, $j)"))
     end
 end
 BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
@@ -34,7 +35,9 @@ function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
     end
 end
 
-Base.length(::SectorValues{A4Object}) = sum(_numlabels(A4Object, i, j) for i in 1:12, j in 1:12) 
+function Base.length(::SectorValues{A4Object})
+    return sum(_numlabels(A4Object, i, j) for i in 1:12, j in 1:12)
+end
 
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
 TensorKitSectors.BraidingStyle(::Type{A4Object}) = NoBraiding()
@@ -49,7 +52,7 @@ function TensorKitSectors.:⊗(a::A4Object, b::A4Object)
 end
 
 function _numlabels(::Type{T}, i, j) where {T<:BimoduleSector}
-    return length(_get_dual_cache(T)[2][i,j])
+    return length(_get_dual_cache(T)[2][i, j])
 end
 
 # Data from files
@@ -89,7 +92,7 @@ function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:A4Object}
     return get(_get_Ncache(I)[i, j, k], (a.label, b.label, c.label), 0)
 end
 
-const Dualcache = IdDict{Type{<:BimoduleSector},Tuple{Vector{Int64}, Matrix{Vector{Int64}}}}()
+const Dualcache = IdDict{Type{<:BimoduleSector},Tuple{Vector{Int64},Matrix{Vector{Int64}}}}()
 
 function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
     global Dualcache
@@ -103,7 +106,7 @@ function extract_dual(::Type{A4Object})
     N = _get_Ncache(A4Object)
     ncats = size(N, 1)
     Is = zeros(Int, ncats)
-    
+
     map(1:ncats) do i
         Niii = N[i, i, i]
         nobji = maximum(first, keys(N[i, i, i]))
@@ -134,19 +137,19 @@ function extract_dual(::Type{A4Object})
             return true
         end
     end
-    
-    allduals = 0 .|> fill(x->Vector{Int}(), ncats, ncats) # ncats square matrix of vectors
+
+    allduals = fill(x -> Vector{Int}(), ncats, ncats)(0) # ncats square matrix of vectors
     map(1:ncats) do i
         nobji = maximum(first, keys(N[i, i, i]))
         map(1:ncats) do j
             nobjj = maximum(first, keys(N[j, j, j]))
-        # the nested vectors contain the duals of the objects in 𝒞_ij, which are in C_ji 
+            # the nested vectors contain the duals of the objects in 𝒞_ij, which are in C_ji 
             Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> C_ii
             Njij = N[j, i, j] # 𝒞_ji x 𝒞_ij -> C_jj
             for i_ob in 1:nobji, j_ob in 1:nobjj
                 get(Niji, (i_ob, j_ob, Is[i]), 0) == 1 || continue # leftone(c_ij) ∈ c_ij x c_ji
                 get(Njij, (j_ob, i_ob, Is[j]), 0) == 1 || continue # rightone(c_ij) ∈ c_ji x c_ij
-                push!(allduals[i,j], j_ob)
+                push!(allduals[i, j], j_ob)
             end
         end
     end
@@ -167,7 +170,7 @@ function TensorKitSectors.rightone(a::BimoduleSector)
 end
 
 function Base.conj(a::BimoduleSector)
-    return A4Object(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i,a.j][a.label])
+    return A4Object(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i, a.j][a.label])
 end
 
 function extract_Fsymbol(::Type{A4Object})
@@ -198,15 +201,18 @@ function extract_Fsymbol(::Type{A4Object})
 end
 
 function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with 16 columns
-    data_dict = Dict{NTuple{4, Int}, Dict{NTuple{6, Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}}()
+    data_dict = Dict{NTuple{4,Int},
+                     Dict{NTuple{6,Int},Vector{Pair{CartesianIndex{4},ComplexF64}}}}()
     # want to make a Dict with keys (i,j,k,l) and vals 
     # a Dict with keys (a,b,c,d,e,f) and vals 
     # a pair of (mu, nu, rho, sigma) and the F value
     for row in eachrow(Farray_part)
         i, j, k, l, a, b, c, d, e, f, mu, nu, rho, sigma = Int.(@view(row[1:14]))
         v = complex(row[15], row[16])
-        colordict = get!(data_dict, (i,j,k,l), Dict{NTuple{6,Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}())
-        Fdict = get!(colordict, (a, b, c, d, e, f), Vector{Pair{CartesianIndex{4}, ComplexF64}}())
+        colordict = get!(data_dict, (i, j, k, l),
+                         Dict{NTuple{6,Int},Vector{Pair{CartesianIndex{4},ComplexF64}}}())
+        Fdict = get!(colordict, (a, b, c, d, e, f),
+                     Vector{Pair{CartesianIndex{4},ComplexF64}}())
         push!(Fdict, CartesianIndex(mu, nu, rho, sigma) => v)
     end
     return data_dict
@@ -237,26 +243,26 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
 
     i, j, k, l = a.i, a.j, b.j, c.j
     colordict = _get_Fcache(I)[i, j, k, l]
-    return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)] 
+    return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
 end
 
 # interface with TensorKit where necessary
 #-----------------------------------------
 
-function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where 
-                                                            {S<:Union{GradedSpace{A4Object, NTuple{486, Int64}}, 
-                                                            SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}, N₁, N₂}
+function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
+         {S<:Union{GradedSpace{A4Object,NTuple{486,Int64}},
+                   SumSpace{GradedSpace{A4Object,NTuple{486,Int64}}}},N₁,N₂}
     codom = codomain(W)
     dom = domain(W)
     # @info "in the correct blocksectors"
     if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
         # this is a problem in full contractions where the coloring outside is 𝒞
-        return NTuple{12, A4Object}(one(A4Object(i,i,1)) for i in 1:12) # have to return all units b/c no info on W in this case
+        return NTuple{12,A4Object}(one(A4Object(i, i, 1)) for i in 1:12) # have to return all units b/c no info on W in this case
     elseif N₁ == 0
-        @assert N₂ != 0 "one of Type A4Object doesn't exist" 
+        @assert N₂ != 0 "one of Type A4Object doesn't exist"
         return filter!(isone, collect(blocksectors(dom)))
     elseif N₂ == 0
-        @assert N₁ != 0 "one of Type A4Object doesn't exist" 
+        @assert N₁ != 0 "one of Type A4Object doesn't exist"
         return filter!(isone, collect(blocksectors(codom)))
     elseif N₂ <= N₁ # keep intersection
         return filter!(c -> hasblock(codom, c), collect(blocksectors(dom)))
@@ -276,7 +282,7 @@ end
 
 # TODO: definition for zero of GradedSpace?
 
-function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
+function dim(V::GradedSpace{<:BimoduleSector})
     T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
     return reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(T))
 end
@@ -284,8 +290,9 @@ end
 # limited oneunit 
 function Base.oneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
-         throw(ArgumentError("sectors of $S are not all equal"))
-    first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
+        throw(ArgumentError("sectors of $S are not all equal"))
+    first(sectors(S)).i == first(sectors(S)).j ||
+        throw(ArgumentError("sectors of $S are non-diagonal"))
     sector = one(first(sectors(S)))
     return ℂ[A4Object](sector => 1)
 end
@@ -298,10 +305,39 @@ end
 #     return SumSpace(ℂ[A4Object](sector => 1))
 # end
 
-function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}}) 
+function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
-         throw(ArgumentError("sectors of $S are not all equal"))
-    first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
+        throw(ArgumentError("sectors of $S are not all equal"))
+    first(sectors(S)).i == first(sectors(S)).j ||
+        throw(ArgumentError("sectors of $S are non-diagonal"))
     sector = one(first(sectors(S)))
     return SumSpace(ℂ[A4Object](sector => 1))
+end
+
+# maybe from the homspace
+function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P));
+                                   conj::Bool=false,
+                                   dual::Bool=false) where {i,V<:GradedSpace{<:I},N} where {I<:BimoduleSector}
+    #possible change to rightone of correct space for N = 0
+    u = N > 0 ? oneunit(P[1]) : error("no unit object in this space")
+    if dual
+        u = TensorKit.dual(u)
+    end
+    if conj
+        u = TensorKit.conj(u)
+    end
+    return ProductSpace(TupleTools.insertafter(P.spaces, i, (u,)))
+end
+
+function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P) + 1);
+                                  conj::Bool=false,
+                                  dual::Bool=false) where {i,V<:GradedSpace{<:I},N} where {I<:BimoduleSector}
+    u = N > 0 ? oneunit(P[1]) : error("no unit object in this space")
+    if dual
+        u = TensorKit.dual(u)
+    end
+    if conj
+        u = TensorKit.conj(u)
+    end
+    return ProductSpace(TupleTools.insertafter(P.spaces, i - 1, (u,)))
 end
