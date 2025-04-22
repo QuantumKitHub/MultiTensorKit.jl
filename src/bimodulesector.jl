@@ -138,10 +138,12 @@ function extract_dual(::Type{A4Object})
         end
     end
 
-    allduals = fill(x -> Vector{Int}(), ncats, ncats)(0) # ncats square matrix of vectors
-    map(1:ncats) do i
+    allduals = Matrix{Vector{Int}}(undef, ncats, ncats) # ncats square matrix of vectors
+    for i in 1:ncats
         nobji = maximum(first, keys(N[i, i, i]))
-        map(1:ncats) do j
+        for j in 1:ncats
+            allduals[i, j] = Int[]
+
             nobjj = maximum(first, keys(N[j, j, j]))
             # the nested vectors contain the duals of the objects in 𝒞_ij, which are in C_ji 
             Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> C_ii
