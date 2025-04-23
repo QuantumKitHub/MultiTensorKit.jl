@@ -197,35 +197,9 @@ for i in 1:12, j in 1:12 # 18c
     isapprox(m_dimsum, c_dimsum; atol=1e-8) || @show i, j, c_dimsum, m_dimsum
 end
 
-############ MPSKit wow ############
-using MultiTensorKit
-using TensorKit
-using MPSKit, MPSKitModels
-C1 = A4Object(1,1,1)
-C0 = A4Object(1,1,4) # unit
-M = A4Object(1,2,1)
-D0 = A4Object(2,2,12) # unit
-D1 = A4Object(2,2,1)
-collect(D0 ⊗ D1)
-collect(D1 ⊗ D1)
-
-P = Vect[A4Object](D0 => 1, D1 => 1)
-h = TensorMap(ones, ComplexF64, P ⊗ P ← P ⊗ P)
-
-lattice = InfiniteChain(1)
-H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
-
-D = 2
-V = Vect[A4Object](M => D);
-inf_init = InfiniteMPS([P], [V])
-
-# (a, b, c, d, e, f) = (A4Object(2, 1, 1), A4Object(1, 2, 1), A4Object(2, 2, 11), A4Object(2, 2, 11), A4Object(2, 2, 9), A4Object(1, 2, 1))
-# Fsymbol(a,b,c,d,e,f)
-# zeros(ComplexF64, Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f), Nsymbol(a, f, d))
-
-# VUMPS
-ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=500));
-expectation_value(ψ, H, envs)
+(a, b, c, d, e, f) = (A4Object(2, 1, 1), A4Object(1, 2, 1), A4Object(2, 2, 11), A4Object(2, 2, 11), A4Object(2, 2, 9), A4Object(1, 2, 1))
+Fsymbol(a,b,c,d,e,f)
+zeros(ComplexF64, Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f), Nsymbol(a, f, d))
 
 # testing blocksectors 
 W = Vect[A4Object](A4Object(2, 2, 12)=>1) ← ProductSpace{GradedSpace{A4Object, NTuple{486, Int64}}, 0}() 
@@ -249,6 +223,46 @@ W isa TensorSpace{SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}}
 
 GradedSpace{A4Object, NTuple{486, Int64}} <: BlockTensorKit.SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}
 
+############ MPSKit wow ############
+using MultiTensorKit
+using TensorKit
+using MPSKit, MPSKitModels
+C1 = A4Object(1,1,1)
+C0 = A4Object(1,1,4) # unit
+M = A4Object(1,2,1)
+D0 = A4Object(2,2,12) # unit
+D1 = A4Object(2,2,2) # self-dual object
+collect(D0 ⊗ D1)
+collect(D1 ⊗ D1)
+
+P = Vect[A4Object](D0 => 1, D1 => 1)
+h = TensorMap(ones, ComplexF64, P ⊗ P ← P ⊗ P)
+
+lattice = InfiniteChain(1);
+H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
+
+# testing insertleft/rightunit
+sp = SU2Space(0=>1, 1=>1)
+ht = TensorMap(ones, ComplexF64, P  ← P)
+htl = TensorMap(ones, ComplexF64, P  ← one(P))
+htr = TensorMap(ones, ComplexF64, one(P)  ← P)
+htnone = TensorMap(ones, ComplexF64, one(P)  ← one(P))
+insertrightunit(htr) # adding to empty space
+insertleftunit(htr) 
+insertrightunit(htl)
+insertleftunit(htl) # adding to empty space
+insertrightunit(htnone)
+insertleftunit(htnone)
+
+
+D = 2
+V = Vect[A4Object](M => D);
+inf_init = InfiniteMPS([P], [V]);
+
+# VUMPS
+ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=15));
+expectation_value(ψ, H, envs)
+
 entropy(ψ)
 entanglement_spectrum(ψ)
 transfer_spectrum(ψ,sector=C0)
@@ -257,18 +271,20 @@ norm(ψ)
 
 #IDMRG
 
-ψ, envs = find_groundstate(inf_init, H, IDMRG(verbosity=3, tol=1e-8, maxiter=100));
+ψ, envs = find_groundstate(inf_init, H, IDMRG(verbosity=3, tol=1e-8, maxiter=15));
 expectation_value(ψ, H, envs)
 
+#IDMRG2
 inf_init2 = InfiniteMPS([P,P], [V,V])
 H2 = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(InfiniteChain(2)));
-ψ2, envs2 = find_groundstate(inf_init2, H2, IDMRG2(verbosity=3, tol=1e-8, maxiter=100));
+idmrg2alg = IDMRG2(verbosity=3, tol=1e-8, maxiter=15, trscheme=truncdim(10))
+ψ2, envs2 = find_groundstate(inf_init2, H2, idmrg2alg);
 expectation_value(ψ2, H2, envs2)
 
 #QuasiParticleAnsatz
 
-momenta = range(0, 2π, 4)
-excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ, envs, sector=C0, num=1);
+momenta = range(0, 2π, 5)
+excE, excqp = excitations(H, QuasiparticleAnsatz(ishermitian=false), momenta, ψ, envs, sector=C0, num=1); # not working for some reason
 
 # quick test on complex f symbols and dimensions
 testp = Vect[A4Object](one(A4Object(i,i,1)) => 1 for i in 1:12)
@@ -282,7 +298,7 @@ P = Vect[A4Object](D0 => 1, D1 => 1)
 D = 2
 V = Vect[A4Object](M => D)
 
-dmrgalg = DMRG(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
+dmrgalg = DMRG(verbosity=3, tol=1e-8, maxiter=15, alg_eigsolve=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
 fin_init = FiniteMPS(L, P, V, left=V, right=V)
 Hfin = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(lattice));
 open_boundary_conditions(H, L) == Hfin
@@ -295,7 +311,7 @@ Es, states, convhist = exact_diagonalization(Hfin; sector=D0);
 Es / (L-1)
 
 #DMRG2 weird real data incompatibility with sector type A4Object
-dmrg2alg = DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))
+dmrg2alg = DMRG2(verbosity=3, tol=1e-8, maxiter=15; alg_eigsolve=MPSKit.Defaults.alg_eigsolve(; ishermitian=false), trscheme=truncdim(10))
 ψfin2, envsfin2 = find_groundstate(fin_init, Hfin, dmrg2alg);
 expectation_value(ψfin2, Hfin, envsfin2) / (L-1)
 
@@ -305,13 +321,13 @@ entanglement_spectrum(ψfin2, round(Int, L/2))
 S = left_virtualspace(Hfin, 1)
 oneunit(S)
 eltype(S)
-oneunit(eltype(S)) # problematic
+oneunit(eltype(S)) # should error
 
 # excitations
 excEfin, excqpfin = excitations(Hfin, QuasiparticleAnsatz(ishermitian=false), ψfin, envsfin;sector=C0, num=1);
 excEfin
 
-excFIN, excqpFIN = excitations(Hfin, FiniteExcited(;gsalg=DMRG2(verbosity=3, tol=1e-8, maxiter=100, eigalg=MPSKit.Defaults.alg_eigsolve(; ishermitian=false))), ψfin;num=1);
+excFIN, excqpFIN = excitations(Hfin, FiniteExcited(;gsalg=dmrg2alg), ψfin;num=1);
 excFIN
 
 # changebonds test
@@ -320,82 +336,129 @@ dim(left_virtualspace(ψ, 1))
 dim(left_virtualspace(ψch, 1))
 
 # time evolution
-ψt, envst = timestep(ψ, H, 10, 1, TDVP(integrator=MPSKit.Defaults.alg_expsolve(; ishermitian=false)), envs);
+
+ψt, envst = timestep(ψ, H, 10, 0, TDVP(integrator=MPSKit.Defaults.alg_expsolve(; ishermitian=false)), envs); # not working for some reason
 et = expectation_value(ψt, H, envst) 
 e = expectation_value(ψ, H, envs)
 isapprox(et, e*exp(-1im * 10 * e); atol=1e-1) # not hermitian
 
+tdvpalg = TDVP(integrator=MPSKit.Defaults.alg_expsolve(; ishermitian=false, krylovdim=10))
+ψt, envst = time_evolve(ψ, H, range(0, 1, 10), tdvpalg, envs)
 
-# testing InfiniteMPOHamiltonian and FiniteMPOHamiltonian constructor not relying on MPSKitModels
-function S_x(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
-    return if spin == 1 // 2
-        TensorMap(T[0 1; 1 0], ℂ^2 ← ℂ^2)
-    elseif spin == 1
-        TensorMap(T[0 1 0; 1 0 1; 0 1 0], ℂ^3 ← ℂ^3) / sqrt(2)
-    else
-        throw(ArgumentError("spin $spin not supported"))
-    end
-end
-function S_y(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
-    return if spin == 1 // 2
-        TensorMap(T[0 -im; im 0], ℂ^2 ← ℂ^2)
-    elseif spin == 1
-        TensorMap(T[0 -im 0; im 0 -im; 0 im 0], ℂ^3 ← ℂ^3) / sqrt(2)
-    else
-        throw(ArgumentError("spin $spin not supported"))
-    end
-end
-function S_z(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
-    return if spin == 1 // 2
-        TensorMap(T[1 0; 0 -1], ℂ^2 ← ℂ^2)
-    elseif spin == 1
-        TensorMap(T[1 0 0; 0 0 0; 0 0 -1], ℂ^3 ← ℂ^3)
-    else
-        throw(ArgumentError("spin $spin not supported"))
-    end
-end
-function S_xx(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
-    return S_x(Trivial, T; spin) ⊗ S_x(Trivial, T; spin)
-end
-function S_yy(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
-    return S_y(Trivial, T; spin) ⊗ S_y(Trivial, T; spin)
-end
-function S_zz(::Type{Trivial}=Trivial, ::Type{T}=ComplexF64; spin=1 // 2) where {T<:Number}
-    return S_z(Trivial, T; spin) ⊗ S_z(Trivial, T; spin)
-end
+make_time_mpo(H, 0.1, alg=WII(tol=1e-8, maxiter=100))
 
-function transverse_field_isingg(; g=1.0, L=Inf)
-    X = S_x(; spin=1 // 2)
-    ZZ = S_zz(; spin=1 // 2)
-    E = TensorMap(ComplexF64[1 0; 0 1], ℂ^2 ← ℂ^2)
+# stat-mech stuff
+mpo = InfiniteMPO([h])
+ψ, envs = leading_boundary(inf_init, mpo, VUMPS(verbosity=3, tol=1e-8, maxiter=15, alg_eigsolve=MPSKit.Defaults.alg_eigsolve(; ishermitian=false)));
 
-    # lattice = L == Inf ? PeriodicVector([ℂ^2]) : fill(ℂ^2, L)
-    if L == Inf
-        lattice = PeriodicArray([ℂ^2])
-        return InfiniteMPOHamiltonian(lattice,
-                                      (i, i + 1) => -(ZZ + (g / 2) * (X ⊗ E + E ⊗ X))
-                                      for i in 1:1)
-        # return MPOHamiltonian(-ZZ - (g / 2) * (X ⊗ E + E ⊗ X))
-    else
-        lattice = fill(ℂ^2, L)
-        return FiniteMPOHamiltonian(lattice,
-                                    (i, i + 1) => -(ZZ + (g / 2) * (X ⊗ E + E ⊗ X))
-                                    for i in 1:(L - 1)) #+
-        # FiniteMPOHamiltonian(lattice, (i,) => -g * X for i in 1:L)
-    end
+# addition, substraction, multiplication
 
-    H = S_zz(; spin=1 // 2) + (g / 2) * (X ⊗ E + E ⊗ X)
-    return if L == Inf
-        MPOHamiltonian(H)
-    else
-        FiniteMPOHamiltonian(fill(ℂ^2, L), (i, i + 1) => H for i in 1:(L - 1))
-    end
-    return MPOHamiltonian(-H)
-end
+# finite 
+Hfin * ψfin
+
+# infinite
+H * ψ # currently doesn't work
+MPSKit.DenseMPO(H) * ψ # does work
 
 
-transverse_field_isingg(; g=1.0, L=3)
+# approximate
+ψa, _ = approximate(ψ, (mpo, inf_init), IDMRG());
+
+mpo2 = InfiniteMPO([h,h])
+inf_init2 = InfiniteMPS([P,P], [V,V])
+H2 = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(InfiniteChain(2)));
+ψ2, envs2 = find_groundstate(inf_init2, H2, VUMPS(verbosity=3, tol=1e-10, maxiter=15));
+
+ψa, _ = approximate(ψ2, (mpo2, inf_init2), IDMRG2(trscheme=truncdim(10)));
+
+# # testing InfiniteMPOHamiltonian and FiniteMPOHamiltonian constructor not relying on MPSKitModels
+
 sp = Vect[FibonacciAnyon](:I=>1, :τ => 1)
 t = TensorMap(ones, ComplexF64, sp ← sp)
 InfiniteMPOHamiltonian(PeriodicArray([sp]), i => t for i in 1:1)
 H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(InfiniteChain(1)));
+
+# gradient grassmann test for fun
+# ggalg = GradientGrassmann(method=OptimKit.ConjugateGradient, maxiter = 100, tol=1e-8, verbosity=3) # can only do this after tagging v0.13
+
+
+
+##############################################
+# diagonal case
+
+D = 2
+V = Vect[A4Object](D0 => D, D1 => D);
+inf_init = InfiniteMPS([P], [V]);
+
+ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=500));
+
+# other module categories
+
+k = 6 # 4,5,6 gives lapackexception(22), 8,9,10,11 take forever with poorly converged environments, 2,12 has poorly converged envs with imags, 1,3 has imag comps: only 1 and 2 give nonzero
+V = Vect[A4Object](A4Object(k,2,i) => 2 for i in 1:MultiTensorKit._numlabels(A4Object, k, 2))
+inf_init = InfiniteMPS([P], [V]);
+# expectation_value(inf_init, H)
+
+ψ, envs = find_groundstate(inf_init, H, VUMPS(verbosity=3, tol=1e-10, maxiter=10));
+expectation_value(ψ, H, envs)
+
+# unitarity test
+i = 1
+objects = A4Object.(i, i, MultiTensorKit._get_dual_cache(A4Object)[2][i,i]);
+count = 0
+for a in objects, b in objects, c in objects
+    for d in ⊗(a, b, c)
+        es = collect(intersect(⊗(a, b), map(dual, ⊗(c, dual(d)))))
+        fs = collect(intersect(⊗(b, c), map(dual, ⊗(dual(d), a))))
+        Fblocks = Vector{Any}()
+        for e in es
+            for f in fs
+                Fs = Fsymbol(a, b, c, d, e, f)
+                push!(Fblocks,
+                      reshape(Fs,
+                              (size(Fs, 1) * size(Fs, 2),
+                               size(Fs, 3) * size(Fs, 4))))
+            end
+        end
+        F = hvcat(length(fs), Fblocks...)
+        if !isapprox(F' * F, one(F); atol=1e-9)
+            @show a,b,c,d,es,fs F
+            count += 1
+        end
+    end
+end
+count
+
+# i=1 one thing not unitary
+a,b,c,d,es,fs = (A4Object(1, 1, 2), A4Object(1, 1, 2), A4Object(1, 1, 2), A4Object(1, 1, 2), A4Object[A4Object(1, 1, 4), A4Object(1, 1, 1), A4Object(1, 1, 3), A4Object(1, 1, 2)], A4Object[A4Object(1, 1, 4), A4Object(1, 1, 1), A4Object(1, 1, 3), A4Object(1, 1, 2)])
+
+Fblocks = Vector{Any}()
+for e in es
+    for f in fs
+        Fs = Fsymbol(a, b, c, d, e, f)
+        @show a,b,c,d,e,f Nsymbol(a,b,e), Nsymbol(e,c,d), Nsymbol(b,c,f), Nsymbol(a,f,d) Fs
+        push!(Fblocks,
+            reshape(Fs,
+                    (size(Fs, 1) * size(Fs, 2),
+                    size(Fs, 3) * size(Fs, 4))))
+    end
+end
+Fblocks
+Fblocks[end]
+F = hvcat(length(fs), Fblocks...)
+F * F'
+
+block22 = Fsymbol(a,a,a,a,a,a)
+Fblock22 = hvcat(4, block22...)
+
+transpose.(Fblocks)
+Ftr = hvcat(length(fs), transpose.(Fblocks)...)
+
+# checking multiplicity
+function obs(i::Int)
+    return A4Object.(i, i, MultiTensorKit._get_dual_cache(I)[2][i,i])
+end
+
+for i in 1:12
+    !any(Nsymbol(a,b,c) > 1 for a in obs(i), b in obs(i), c in obs(i))  && @show i
+end
