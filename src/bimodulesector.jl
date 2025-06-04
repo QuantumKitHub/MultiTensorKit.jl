@@ -273,15 +273,6 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
     end
 end
 
-# function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T<:Number, S<:GradedSpace{A4Object}}
-#     @show t
-#     _vector = findall(!iszero, values(blocks(t))) # should have 0 or 1 elements, since only one of the blocks could be non-zero
-#     if isempty(_vector)
-#         return zero(scalartype(t))
-#     end
-#     return only(values(blocks(t))[only(_vector)])
-# end
-
 # TODO: definition for zero of GradedSpace?
 
 function dim(V::GradedSpace{<:BimoduleSector})
@@ -298,14 +289,6 @@ function Base.oneunit(S::GradedSpace{<:BimoduleSector})
     sector = one(first(sectors(S)))
     return ℂ[A4Object](sector => 1)
 end
-
-# function Base.oneunit(S::SumSpace{GradedSpace{A4Object, NTuple{486, Int64}}}) 
-#     allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
-#          throw(ArgumentError("sectors of $S are not all equal"))
-#     first(sectors(S)).i == first(sectors(S)).j || throw(ArgumentError("sectors of $S are non-diagonal"))
-#     sector = one(first(sectors(S)))
-#     return SumSpace(ℂ[A4Object](sector => 1))
-# end
 
 function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
