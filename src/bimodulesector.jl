@@ -1,3 +1,15 @@
+"""
+    struct BimoduleSector{Name} <: Sector
+    BimoduleSector{Name}(i::Int, j::Int, label::Int)
+
+Represents objects in the component subcategory ``𝒞ᵢⱼ`` of the multifusion category ``𝒞 = ⨁ᵢⱼ 𝒞ᵢⱼ``, 
+where ``𝒞`` is identified as Name. 
+
+## Fields
+- `i::Int`: The row index of the object in the matrix representation of the multifusion category.
+- `j::Int`: The column index of the object in the matrix representation of the multifusion category.
+- `label::Int`: The label of the object within the component subcategory.
+"""
 struct BimoduleSector{Name} <: Sector
     i::Int
     j::Int
