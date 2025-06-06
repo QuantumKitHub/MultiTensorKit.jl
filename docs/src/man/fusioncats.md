@@ -11,25 +11,28 @@ The aim of this section is to explain the bare minimum required to proceed to th
 
 Let us start simple and introduce the **fusion ring** $\mathcal{C}$ in a black-box manner. This ring 
 *   consists of finitely many simple objects $\{ X_1, X_2, ..., X_R \}$, with $R$ the rank of the fusion ring,
-*   which can be fused with one another: $X_i \otimes X_j = \sum_k N_{ij}^k X_k$, introducing the **N-symbol** $N_{ij}^k \in \mathbb{N}$ in the fusion rules,
-*   contains a *unique* unit object $1_\mathcal{C}$ which satisfies $1_\mathcal{C} \otimes X_i = X_i \otimes 1_\mathcal{C} = X_i$ for all objects $X_i \in \mathcal{C}$,
-*   has a dual object $\overline{X}$ for every object $X$ such that $X \otimes \overline{X} = \overline{X} \otimes X = 1_\mathcal{C} \oplus ...$, generalising the notion of the inverse element.
+*   which can be fused with one another: $X_i \otimes X_j \cong \sum_k N_{ij}^k X_k,$ introducing the **N-symbol** $N_{ij}^k \in \mathbb{N}$ in the fusion rules,
+*   contains a *unique* unit object $1_\mathcal{C}$ which satisfies $1_\mathcal{C} \otimes X_i \cong X_i \otimes 1_\mathcal{C} \cong X_i$ for all objects $X_i \in \mathcal{C}$,
+*   has a dual object $\overline{X}$ for every object $X$ such that $X \otimes \overline{X} \cong \overline{X} \otimes X \cong 1_\mathcal{C} \oplus ...$, generalising the notion of the inverse element.
 
 To extend the fusion ring to the **fusion category**, we need to add the following structure:
 *   Consider only the representatives of isomorphism classes of simple objects $\mathcal{I}_\mathcal{C}$,
-*   The associator $F^{X_iX_jX_k}: (X_i \otimes X_j) \otimes X_k \rightarrow X_i \otimes (X_j \otimes X_k)$ which fulfills the famous pentagon equation,
+*   The associator $F^{X_iX_jX_k}: (X_i \otimes X_j) \otimes X_k \xrightarrow{\sim} X_i \otimes (X_j \otimes X_k)$
+   which fulfills the famous pentagon equation,
 *   Morphisms between (simple) objects $\text{\text{Hom}}_\mathcal{C}(X_i, X_j)$, which are empty vector spaces unless the objects are isomorphic, the latter then giving $\mathbb{C}$,
-*   More general morphisms $\text{\text{Hom}}_\mathcal{C}(X_i \otimes X_j, X_k) = \mathbb{C}^{N_{ij}^k}$.
+*   More general morphisms $\text{\text{Hom}}_\mathcal{C}(X_i \otimes X_j, X_k) \cong \mathbb{C}^{N_{ij}^k}$.
 
-Vectors in these hom-spaces are graphically denoted
+This way, we can describe fusion categories by a triple $(\otimes, 1_\mathcal{C}, F)$ of $\mathcal{C}$ defining its monoidal product, unit object and monoidal associator, the latter also commonly called the **F-symbol**. In particular, the simple objects have their respective quantum dimensions $d_i = \dim(X_i)$ which form their own one-dimensional representation of the fusion algebra: $d_i d_j = \sum_k N_{ij}^k d_k$. In particular, the unit object always has quantum dimension 1, and all other quantum dimensions are larger or equal to one. These quantum dimensions are encoded in the F-symbol. The isomorphisms instead of the equalities are a technical detail, so we drop that notation. 
+
+Vectors in these hom-spaces are graphically denoted as living in the trivalent junction
 
 ![homvector](img/...)
 
-With the associator, commonly called the **F-symbol**, we can perform F-moves:
+With the F-symbol, we can perform F-moves:
 
-![Fmove](img/...)
+![Fmove](img/Fmove.pdf)
 
-TensorKit requires the F-symbols to be unitary. This way, we can interpret the F-symbol with 4 indices as a unitary matrix, and the F-move as a unitary basis transformation.
+TensorKit requires the F-symbols to be unitary. This way, we can interpret the F-symbol $F^{ijk}_l$ as a unitary matrix, and the F-move as a unitary basis transformation. Unitarity is also useful from a diagrammatic point of view because the category is then equipped with a pivotal and spherical structure. This essentially means that morphisms can be drawn and moved around freely on a 2-sphere, such that vector spaces can be moved freely from domain (codomain) to codomain (domain). 
 
 ## Examples
 
