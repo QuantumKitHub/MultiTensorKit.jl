@@ -252,8 +252,8 @@ end
 #-----------------------------------------
 
 function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
-         {S<:Union{GradedSpace{A4Object,NTuple{486,Int64}},
-                   SumSpace{GradedSpace{A4Object,NTuple{486,Int64}}}},N₁,N₂}
+         {S<:Union{Vect[A4Object],
+                   SumSpace{Vect[A4Object]}},N₁,N₂}
     codom = codomain(W)
     dom = domain(W)
     # @info "in the correct blocksectors"
