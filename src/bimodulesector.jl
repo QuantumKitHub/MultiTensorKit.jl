@@ -21,7 +21,7 @@ function Base.convert(::Type{BimoduleSector{Name}}, d::NTuple{3,Int}) where {Nam
     return BimoduleSector{Name}(d...)
 end
 
-Base.IteratorSize(::Type{SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 
 # TODO: generalize?
 function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
