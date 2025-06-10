@@ -79,7 +79,6 @@ const Ncache = IdDict{Type{<:BimoduleSector},Array{Dict{NTuple{3,Int},Int},3}}()
 function _get_Ncache(::Type{T}) where {T<:BimoduleSector}
     global Ncache
     return get!(Ncache, T) do
-        @debug "loading Nsymbol cache for $T"
         return extract_Nsymbol(T)
     end
 end
@@ -97,7 +96,6 @@ const Dualcache = IdDict{Type{<:BimoduleSector},Tuple{Vector{Int64},Matrix{Vecto
 function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
     global Dualcache
     return get!(Dualcache, T) do
-        @debug "loading dual cache for $T"
         return extract_dual(T)
     end
 end
@@ -159,7 +157,7 @@ function extract_dual(::Type{A4Object})
 end
 
 function Base.one(a::BimoduleSector)
-    a.i == a.j || error("don't know how to define one for modules")
+    a.i == a.j || error("unit object for module categories is ill-defined")
     return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
@@ -179,7 +177,6 @@ function extract_Fsymbol(::Type{A4Object})
     result = Dict{NTuple{4,Int},Dict{NTuple{6,Int},Array{ComplexF64,4}}}()
     for i in 1:12
         filename = joinpath(artifact_path, "A4", "Fsymbol_$i.txt")
-        @debug "loading $filename"
         @assert isfile(filename) "cannot find $filename"
         Farray_part = readdlm(filename)
         for ((i, j, k, l), colordict) in convert_Fs(Farray_part)
@@ -226,7 +223,6 @@ const Fcache = IdDict{Type{<:BimoduleSector},
 function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
     global Fcache
     return get!(Fcache, T) do
-        @debug "loading Fsymbol cache for $T"
         return extract_Fsymbol(T)
     end
 end
@@ -256,7 +252,6 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
                    SumSpace{Vect[A4Object]}},N₁,N₂}
     codom = codomain(W)
     dom = domain(W)
-    # @info "in the correct blocksectors"
     if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
         # this is a problem in full contractions where the coloring outside is 𝒞
         return NTuple{12,A4Object}(one(A4Object(i, i, 1)) for i in 1:12) # have to return all units b/c no info on W in this case
@@ -304,7 +299,7 @@ function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P))
                                    conj::Bool=false,
                                    dual::Bool=false) where {i,V<:GradedSpace{<:I},N} where {I<:BimoduleSector}
     #possible change to rightone of correct space for N = 0
-    u = N > 0 ? oneunit(P[1]) : error("no unit object in this space")
+    u = N > 0 ? oneunit(P[1]) : error("no unit object in $P")
     if dual
         u = TensorKit.dual(u)
     end
@@ -317,7 +312,7 @@ end
 function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P) + 1);
                                   conj::Bool=false,
                                   dual::Bool=false) where {i,V<:GradedSpace{<:I},N} where {I<:BimoduleSector}
-    u = N > 0 ? oneunit(P[1]) : error("no unit object in this space")
+    u = N > 0 ? oneunit(P[1]) : error("no unit object in $P")
     if dual
         u = TensorKit.dual(u)
     end
