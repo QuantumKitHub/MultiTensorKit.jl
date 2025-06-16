@@ -162,15 +162,15 @@ function Base.one(a::BimoduleSector)
 end
 
 function TensorKitSectors.leftone(a::BimoduleSector)
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
+    return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
 function TensorKitSectors.rightone(a::BimoduleSector)
-    return A4Object(a.j, a.j, _get_dual_cache(typeof(a))[1][a.j])
+    return typeof(a)(a.j, a.j, _get_dual_cache(typeof(a))[1][a.j])
 end
 
 function Base.conj(a::BimoduleSector)
-    return A4Object(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i, a.j][a.label])
+    return typeof(a)(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i, a.j][a.label])
 end
 
 function extract_Fsymbol(::Type{A4Object})
@@ -282,22 +282,18 @@ function Base.oneunit(S::GradedSpace{<:BimoduleSector})
     first(sectors(S)).i == first(sectors(S)).j ||
         throw(ArgumentError("sectors of $S are non-diagonal"))
     sector = one(first(sectors(S)))
-    return ℂ[A4Object](sector => 1)
+    return spacetype(S)(sector => 1)
 end
 
 function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-    allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
-        throw(ArgumentError("sectors of $S are not all equal"))
-    first(sectors(S)).i == first(sectors(S)).j ||
-        throw(ArgumentError("sectors of $S are non-diagonal"))
-    sector = one(first(sectors(S)))
-    return SumSpace(ℂ[A4Object](sector => 1))
+    @assert !isempty(S) "Cannot determine type of empty space"
+    return SumSpace(oneunit(first(S.spaces)))
 end
 
 # maybe from the homspace
 function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P));
                                    conj::Bool=false,
-                                   dual::Bool=false) where {i,V<:GradedSpace{<:I},N} where {I<:BimoduleSector}
+                                   dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
     #possible change to rightone of correct space for N = 0
     u = N > 0 ? oneunit(P[1]) : error("no unit object in $P")
     if dual
@@ -311,7 +307,7 @@ end
 
 function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P) + 1);
                                   conj::Bool=false,
-                                  dual::Bool=false) where {i,V<:GradedSpace{<:I},N} where {I<:BimoduleSector}
+                                  dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
     u = N > 0 ? oneunit(P[1]) : error("no unit object in $P")
     if dual
         u = TensorKit.dual(u)
