@@ -290,12 +290,45 @@ function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     return SumSpace(oneunit(first(S.spaces)))
 end
 
-# maybe from the homspace
-function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P));
+# oneunit for spaces whose elements all belong to the same sector
+function rightoneunit(S::GradedSpace{<:BimoduleSector})
+    allequal(a.j for a in sectors(S)) ||
+        throw(ArgumentError("sectors of $S do not have the same rightone"))
+
+    allequal(a.i for a in sectors(S)) ||
+        throw(ArgumentError("sectors of $S are not all equal"))
+
+    sector = rightone(first(sectors(S)))
+    return spacetype(S)(sector => 1)
+end
+
+function rightoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+    @assert !isempty(S) "Cannot determine type of empty space"
+    return SumSpace(rightoneunit(first(S.spaces)))
+end
+
+function leftoneunit(S::GradedSpace{<:BimoduleSector})
+    allequal(a.i for a in sectors(S)) ||
+        throw(ArgumentError("sectors of $S do not have the same leftone"))
+
+    allequal(a.j for a in sectors(S)) ||
+        throw(ArgumentError("sectors of $S are not all equal"))
+
+    sector = leftone(first(sectors(S)))
+    return spacetype(S)(sector => 1)
+end
+
+function leftoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+    @assert !isempty(S) "Cannot determine type of empty space"
+    return SumSpace(leftoneunit(first(S.spaces)))
+end
+
+function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i};
                                    conj::Bool=false,
                                    dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
-    #possible change to rightone of correct space for N = 0
-    u = N > 0 ? oneunit(P[1]) : error("no unit object in $P")
+    i > N && error("cannot insert a sensible right unit onto $P at index $(i+1)")
+    # possible change to rightone of correct space for N = 0
+    u = N > 0 ? rightoneunit(P[i]) : error("no unit object in $P")
     if dual
         u = TensorKit.dual(u)
     end
@@ -305,10 +338,12 @@ function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P))
     return ProductSpace(TupleTools.insertafter(P.spaces, i, (u,)))
 end
 
-function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}=Val(length(P) + 1);
+# possible TODO: overwrite defaults at level of HomSpace and TensorMap?
+function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}; # want no defaults?
                                   conj::Bool=false,
                                   dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
-    u = N > 0 ? oneunit(P[1]) : error("no unit object in $P")
+    i > N && error("cannot insert a sensible left unit onto $P at index $i") # do we want this to error in the diagonal case?
+    u = N > 0 ? leftoneunit(P[i]) : error("no unit object in $P")
     if dual
         u = TensorKit.dual(u)
     end

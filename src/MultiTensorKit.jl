@@ -1,6 +1,7 @@
 module MultiTensorKit
 
 export BimoduleSector, A4Object
+export leftoneunit, rightoneunit
 
 using JSON3
 using DelimitedFiles
