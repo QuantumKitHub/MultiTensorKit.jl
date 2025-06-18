@@ -158,7 +158,7 @@ end
 
 function Base.one(a::BimoduleSector)
     a.i == a.j || error("unit object for module categories is ill-defined")
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
+    return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
 function TensorKitSectors.leftone(a::BimoduleSector)
