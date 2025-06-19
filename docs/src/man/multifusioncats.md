@@ -92,9 +92,15 @@ For this reason, at the level of the fusion trees the topological move that is p
 
 Importantly, we identify the dual vector space labeled by a module category with a vector space labeled by the opposite module category. Consequently,
 $$\mathcal{M}^* \simeq \mathcal{M}^\text{op}.$$
-In the multifusion setting, this can also be seen graphically. By keeping track of the colorings and the directions of the arrows of the legs, one can see that we need to slightly modify the expression for the B-move to the following: (search that one paper from ethan lake which shows this stuff)
+In the multifusion setting, this can also be seen graphically. By keeping track of the colorings and the directions of the arrows of the legs, one can see that we need to slightly modify the expression for the B-move to the following:
 
 ![Bmove_MF]()
+
+where by $\mathbb{1}_a$ we mean the right unit of $a$ (the left unit we would denote $^{}_a \mathbb{1}$). 
+
+Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{a \bar{a} a}_{a}$ needs to be evaluated for these topological data. Graphically, we find that
+
+![qdim_fs_MF]()
 
 need to show other changed expressions like A-move, dimension, frobenius-schur indicator, what else outside of TensorKitSectors in terms of fusion tree manipulations?
 
