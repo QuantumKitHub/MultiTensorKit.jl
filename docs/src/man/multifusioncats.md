@@ -7,7 +7,9 @@ We will mostly use the notation in [Lootens et al.](@cite Lootens_2023) for fusi
 $${}^\mathcal{D}\!F^{\alpha \beta \gamma}: \alpha \otimes (\beta \otimes \gamma) \rightarrow (\alpha \otimes \beta) \otimes \gamma$$
  the **monoidal associator**.  An F-move is now graphically portrayed as:
 
-![Fmove_D](img/...)
+```@raw html
+<img src="../img/Fmove_D.svg" alt="" width="100%"/>
+``` 
 
 We can consider the **right module category** $\mathcal{M}$ over $\mathcal{D}$, which is a category (not necessarily fusion!) with (isomorphism classes of) simple objects $\mathcal{I}_\mathcal{M} = \{A,B,...\}$, a right action 
 $$\triangleleft: \mathcal{M} \times \mathcal{D} \rightarrow \mathcal{M}$$
@@ -15,7 +17,9 @@ and the **right module associator**
 $${}^\triangleleft\!F^{A\alpha\beta}: A \triangleleft (\alpha \otimes \beta) \rightarrow (A \triangleleft \alpha) \triangleleft \beta.$$
 An F-move with this module associator can be expressed as:
 
-![Fmove_MD](img/Fmove_MD.pdf)
+```@raw html
+<img src="../img/Fmove_MD.svg" alt="" width="100%"/>
+``` 
 
 The module structure of $\mathcal{M}$ is now defined as the triple $(\mathcal{M}, \triangleleft, {}^\triangleleft\!F)$. The right module associator now satisfies a mixed pentagon equation with ${}^\mathcal{D}\!F$. 
 
@@ -25,13 +29,17 @@ while the **left module associator** is a natural isomorphism that acts as
 $${}^\triangleright\!F^{abA}: (a \otimes b) \triangleright A \rightarrow a \triangleright (b \triangleright A)$$
 for $\mathcal{I}_\mathcal{C} = \{a,b,...\}$. The left module associator also fulfills a mixed pentagon equation with ${}^\mathcal{C}\!F$. An F-move with ${}^\mathcal{C}\!F$ takes on the form:
 
-![Fmove_CM](img/Fmove_CM.pdf)
+```@raw html
+<img src="../img/Fmove_CM.svg" alt="" width="100%"/>
+``` 
 
 We can combine the concepts of left and right module categories as follows. Say there are two fusion categories $\mathcal{C}$ and $\mathcal{D}$. A $(\mathcal{C}, \mathcal{D})$-**bimodule category** is a module category, now defined through a sextuple $(\mathcal{M}, \triangleright, \triangleleft, {}^\triangleright\!F, {}^\triangleleft\!F, {}^{{\triangleright \hspace{-1.2mu}\triangleleft}}\!F)$ such that $(\mathcal{M}, \triangleright, {}^\triangleright\!F)$ is a left $\mathcal{C}$-module category, and $(\mathcal{M}, \triangleleft, {}^\triangleleft\!F)$ is a right $\mathcal{D}$-module category, and with additional structure such that the **bimodule associator** acts as 
 $${}^{{\triangleright \hspace{-1.2mu}\triangleleft}}\!F^{aA\alpha}: (a \triangleright A) \triangleleft \alpha \rightarrow a \triangleright (A \triangleleft \alpha)$$
 for $a \in \mathcal{I}_\mathcal{C}, \alpha \in \mathcal{I}_\mathcal{D}, A \in \mathcal{I}_\mathcal{M}$. The bimodule associator fulfills a mixed pentagon equation with the module associators. An F-move with ${}^{{\triangleright \hspace{-1.2mu}\triangleleft}}\!F$ is given by:
 
-![Fmove_CMD](img/Fmove_CMD.pdf)
+```@raw html
+<img src="../img/Fmove_CMD.svg" alt="" width="100%"/>
+``` 
 ## Opposite module categories
 Consider a fusion category $\mathcal{D}$ and a *right* module category $\mathcal{M}$ over $\mathcal{D}$. We can define $\mathcal{M}^{\text{op}}$ to be the opposite category of $\mathcal{M}$ [etingof2009](@cite). Then $\mathcal{M}^{\text{op}}$ is a *left* module category over $\mathcal{D}$. A similar statement can be made starting from a left module category and getting an opposite right module category. In particular, given a $(\mathcal{C}, \mathcal{D})$-bimodule category $\mathcal{M}$ over the fusion categories $\mathcal{C}, \mathcal{D}$, we see immediately that $\mathcal{M}^{\text{op}}$ is a $(\mathcal{D}, \mathcal{C})$-bimodule category.
 
@@ -72,7 +80,9 @@ Multifusion categories can also be interpreted as 2-categories. We still interpr
 
 The simplest non-trivial fusion diagram is a trivalent junction:
 
-![Nsymbol_coloring](img/Nsymbol_coloring.pdf)
+```@raw html
+<img src="../img/Nsymbol_coloring.svg" alt="" width="100%"/>
+``` 
 
 The most general case is the top left figure, where all three regions have a different coloring. The top middle region having the same coloring from the top left and top right strands follow from the delta function in the tensor product definition. However, as will be explained more in detail later, this most general trivalent junction with three colorings will never be needed. In short, we will always be considering a single bimodule category $\mathcal{C}_{ij}$ at a time, and the only other non-diagonal subcategory which fuses with this is its opposite $\mathcal{C}_{ji}$. This is displayed in the top middle and right. Similarly, two colorings are required when considering the fusion between a fusion and module strand, shown in the bottom left and middle figure. The simplest trivalent junctions boil down to fusions within fusion categories, which is obviously drawn with just one color. This is shown in the bottom right.
 
@@ -86,7 +96,9 @@ Linear algebra tells us that given a (finite-dimensional) vector space $V$ with 
 In principle, choosing to bend e.g. codomain legs to the right and domain legs to left is an arbitrary choice, but would require to distinguish between left and right transposes. However, TensorKit.jl is implemented in a way that does not differentiate the two. In particular, we do not have to worry about this when considering categorical symmetries where, in principle, the left and right dual of an object are not equivalent. This is because this left-right symmetry is guaranteed when considering unitary fusion categories, which is what is done in TensorKit and necessarily in MultiTensorKit. 
 
 For this reason, at the level of the fusion trees the topological move that is performed to bend the legs along the right is called a **B-move**. Graphically, one can show that this bend boils down to a particular F-move. The typical equation found in the literature is the following:
-![Bmove_lit](img/Bmove_lit.pdf)
+```@raw html
+<img src="../img/Bmove_lit.svg" alt="" width="100%"/>
+``` 
 
 ... The reason to only consider B-moves is rooted in the choice of canonical form of fusion trees within TensorKit, where fusions are iterated over from left to right and splittings from right to left. 
 
@@ -94,13 +106,17 @@ Importantly, we identify the dual vector space labeled by a module category with
 $$\mathcal{M}^* \simeq \mathcal{M}^\text{op}.$$
 In the multifusion setting, this can also be seen graphically. By keeping track of the colorings and the directions of the arrows of the legs, one can see that we need to slightly modify the expression for the B-move to the following:
 
-![Bmove_MF](img/Bmove_MF.pdf)
+```@raw html
+<img src="../img/Bmove_MF.svg" alt="" width="100%"/>
+``` 
 
 where by $\mathbb{1}_a$ we mean the right unit of $a$ (the left unit we would denote $^{}_a \mathbb{1}$). 
 
 Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{a \bar{a} a}_{a}$ needs to be evaluated for these topological data. Graphically, we find that
 
-![qdim_fs_MF](img/qdim_fs_MF.pdf)
+```@raw html
+<img src="../img/qdim_fs_MF.svg" alt="" width="100%"/>
+``` 
 
 need to show other changed expressions like A-move, dimension, frobenius-schur indicator, what else outside of TensorKitSectors in terms of fusion tree manipulations?
 
