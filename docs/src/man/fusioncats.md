@@ -26,7 +26,7 @@ This way, we can describe fusion categories by a triple $(\otimes, 1_\mathcal{C}
 
 Vectors in these hom-spaces are graphically denoted as living in the trivalent junction
 
-![homvector](img/...)
+![homvector](img/homvector.pdf)
 
 With the F-symbol, we can perform F-moves:
 
