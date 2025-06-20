@@ -115,7 +115,7 @@ where by $\mathbb{1}_a$ we mean the right unit of $a$ (the left unit we would de
 Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{a \bar{a} a}_{a}$ needs to be evaluated for these topological data. Graphically, we find that
 
 ```@raw html
-<img src="../img/qdim_fs_MF.svg" alt="" width="100%"/>
+<img src="../img/qdim_fs_MF.svg" alt="" width="50%" class="center"/>
 ``` 
 
 need to show other changed expressions like A-move, dimension, frobenius-schur indicator, what else outside of TensorKitSectors in terms of fusion tree manipulations?

@@ -26,7 +26,7 @@ This way, we can describe fusion categories by a triple $(\otimes, 1_\mathcal{C}
 
 Vectors in these hom-spaces are graphically denoted as living in the trivalent junction
 ```@raw html
-<img src="../img/homvector.svg" alt="" width="50%"/>
+<img src="../img/homvector.svg" alt="" width="50%" class="center"/>
 ``` 
 
 
