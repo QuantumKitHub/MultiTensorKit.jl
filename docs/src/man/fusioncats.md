@@ -7,7 +7,7 @@ Afterwards, the extension to multifusion categories is explained, and its relati
 
 # Fusion category theory
 
-The aim of this section is to explain the bare minimum required to proceed to the next section on multifusion category theory and bimodule categories. More details can be found in the [TensorKit documentation](https://jutho.github.io/TensorKit.jl/stable/man/categories/) or the book Tensor Categories ([etingof2016tensor](@cite)).
+The aim of this section is to explain the bare minimum required to proceed to the next section on multifusion category theory and bimodule categories. More details can be found in the [TensorKit documentation](https://jutho.github.io/TensorKit.jl/stable/man/categories/) or the book Tensor Categories [etingof2016tensor](@cite).
 
 Let us start simple and introduce the **fusion ring** $\mathcal{C}$ in a black-box manner. This ring 
 *   consists of finitely many simple objects $\{ X_1, X_2, ..., X_R \}$, with $R$ the rank of the fusion ring,
@@ -19,8 +19,8 @@ To extend the fusion ring to the **fusion category**, we need to add the followi
 *   Consider only the representatives of isomorphism classes of simple objects $\mathcal{I}_\mathcal{C}$,
 *   The associator $F^{X_iX_jX_k}: (X_i \otimes X_j) \otimes X_k \xrightarrow{\sim} X_i \otimes (X_j \otimes X_k)$
    which fulfills the famous pentagon equation,
-*   Morphisms between (simple) objects $\text{\text{Hom}}_\mathcal{C}(X_i, X_j)$, which are empty vector spaces unless the objects are isomorphic, the latter then giving $\mathbb{C}$,
-*   More general morphisms $\text{\text{Hom}}_\mathcal{C}(X_i \otimes X_j, X_k) \cong \mathbb{C}^{N_{ij}^k}$.
+*   Morphisms between (simple) objects $\text{Hom}_\mathcal{C}(X_i, X_j)$, which are empty vector spaces unless the objects are isomorphic, the latter then giving $\mathbb{C}$,
+*   More general morphisms $\text{Hom}_\mathcal{C}(X_i \otimes X_j, X_k) \cong \mathbb{C}^{N_{ij}^k}$.
 
 This way, we can describe fusion categories by a triple $(\otimes, 1_\mathcal{C}, F)$ of $\mathcal{C}$ defining its monoidal product, unit object and monoidal associator, the latter also commonly called the **F-symbol**. In particular, the simple objects have their respective quantum dimensions $d_i = \dim(X_i)$ which form their own one-dimensional representation of the fusion algebra: $d_i d_j = \sum_k N_{ij}^k d_k$. In particular, the unit object always has quantum dimension 1, and all other quantum dimensions are larger or equal to one. These quantum dimensions are encoded in the F-symbol. The isomorphisms instead of the equalities are a technical detail, so we drop that notation. 
 
@@ -45,9 +45,9 @@ Colloquially speaking, category theory attempts to generalise mathematical struc
 
 |$\mathsf{VecG}$|$\mathsf{RepG}$|Categorical generalisation|
 |:---:|:---:|:---:|
-|$G$-graded vector spaces $V_1, V_2, ...$|Representations of $G$ <br>$(V_1, \pi_1), (V_2, \pi_2), ...$|Objects|
-|$G$-graded preserving linear maps <br>$\phi: V \rightarrow W$|Intertwiners $f: V_1 \rightarrow V_2$, <br>$f \circ \pi_1 = \pi_2 \circ f$|Morphisms $\text{Hom}_\mathcal{C}$|
-1d subspaces $\mathbb{C}_{g_1}, \mathbb{C}_{g_2}$: <br> $\text{Hom}_{\mathsf{VecG}}(\mathbb{C}_{g_1},\mathbb{C}_{g_2}) = \delta_{g_1g_2}$|Irreps: $\text{Hom}_{\mathsf{RepG}}(\rho_i,\rho_j) = \delta_{ij} \mathbb{C}$ (Schur)|Simple objects: $\text{Hom}_{\mathcal{C}}(a,b) = \delta_{ab}\mathbb{C}$|
+|$G$-graded vector spaces $V_1, V_2, ...$|Representations of $G$ $(V_1, \pi_1), (V_2, \pi_2), ...$|Objects|
+|$G$-graded preserving linear maps $\phi: V \rightarrow W$|Intertwiners $f: V_1 \rightarrow V_2$, $f \circ \pi_1 = \pi_2 \circ f$|Morphisms $\text{Hom}_\mathcal{C}$|
+1d subspaces $\mathbb{C}_{g_1}, \mathbb{C}_{g_2}$:  $\text{Hom}_{\mathsf{VecG}}(\mathbb{C}_{g_1},\mathbb{C}_{g_2}) = \delta_{g_1g_2}$|Irreps: $\text{Hom}_{\mathsf{RepG}}(\rho_i,\rho_j) = \delta_{ij} \mathbb{C}$ (Schur)|Simple objects: $\text{Hom}_{\mathcal{C}}(a,b) = \delta_{ab}\mathbb{C}$|
 $G$-graded tensor product $(V \otimes W)_g = \oplus_{hk=g} V_h \otimes W_k$| $\pi_i \otimes \pi_j \simeq \oplus_i N_{ij}^k\rho_k$ | Direct sum, monoidal product, fusion rules, multiplicity|
 $\mathbb{C}_1 \otimes W \simeq W \simeq W \otimes \mathbb{C}_1$ | Trivial rep 1: $1 \otimes \rho = \rho = \rho \otimes 1$ | Monoidal unit $1_\mathcal{C}$
 $\mathbb{C}_g \otimes \mathbb{C}_{g^{-1}} = \mathbb{C}_1 = \mathbb{C}_{g^{-1}} \otimes \mathbb{C}_g$ | $\pi \otimes \overline{\pi} = 1 \oplus ...$ | Dual object
