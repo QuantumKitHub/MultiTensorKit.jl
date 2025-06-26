@@ -3,6 +3,7 @@ using TensorKitSectors, TensorKit
 using Test, TestExtras
 
 I = A4Object
+s = size(A4Object)
 
 @testset "Basic type properties" verbose = true begin
     Istr = TensorKitSectors.type_repr(I)
@@ -10,7 +11,7 @@ I = A4Object
     @test eval(Meta.parse(TensorKitSectors.type_repr(I))) == I
 end
 
-@testset "Fusion Category $i" for i in 1:12
+@testset "Fusion Category $i" for i in 1:s
     objects = A4Object.(i, i, MultiTensorKit._get_dual_cache(I)[2][i, i])
 
     @testset "Basic properties" begin
@@ -63,7 +64,7 @@ end
     end
 end
 
-@testset "A4 Category ($i, $j) units and duals" for i in 1:12, j in 1:12
+@testset "A4 Category ($i, $j) units and duals" for i in 1:s, j in 1:s
     Cij_obs = A4Object.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
 
     s = rand(Cij_obs, 1)[1]
@@ -76,7 +77,7 @@ end
     @test dual(dual(s)) == s
 end
 
-@testset "A4 Category ($i, $j) left and right units" for i in 1:12, j in 1:12
+@testset "A4 Category ($i, $j) left and right units" for i in 1:s, j in 1:s
     Cij_obs = A4Object.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
 
     s = rand(Cij_obs, 1)[1]

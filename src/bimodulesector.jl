@@ -3,7 +3,8 @@ struct BimoduleSector{Name} <: Sector
     j::Int
     label::Int
     function BimoduleSector{:A4}(i::Int, j::Int, label::Int)
-        i <= 12 && j <= 12 || throw(DomainError("object outside the matrix A4"))
+        i <= size(BimoduleSector{:A4}) && j <= size(BimoduleSector{:A4}) ||
+            throw(DomainError("object outside the matrix A4"))
         return label <= _numlabels(BimoduleSector{:A4}, i, j) ? new{:A4}(i, j, label) :
                throw(DomainError("label outside category A4($i, $j)"))
     end
@@ -21,12 +22,15 @@ function Base.convert(::Type{BimoduleSector{Name}}, d::NTuple{3,Int}) where {Nam
     return BimoduleSector{Name}(d...)
 end
 
+Base.size(::Type{A4Object}) = 7
+
 Base.IteratorSize(::Type{<:SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 
 # TODO: generalize?
 function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
-    I > 12 * 12 && return nothing
-    i, j = CartesianIndices((12, 12))[I].I
+    s = size(A4Object)
+    I > s * s && return nothing
+    i, j = CartesianIndices((s, s))[I].I
     maxlabel = _numlabels(A4Object, i, j)
     return if label > maxlabel
         iterate(iter, (I + 1, 1))
@@ -36,7 +40,8 @@ function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
 end
 
 function Base.length(::SectorValues{A4Object})
-    return sum(_numlabels(A4Object, i, j) for i in 1:12, j in 1:12)
+    s = size(A4Object)
+    return sum(_numlabels(A4Object, i, j) for i in 1:s, j in 1:s)
 end
 
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
@@ -60,21 +65,22 @@ end
 const artifact_path = joinpath(artifact"fusiondata", "MultiTensorKit.jl-data-v0.1.3")
 
 function extract_Nsymbol(::Type{A4Object})
-    filename = joinpath(artifact_path, "A4", "Nsymbol.json")
-    isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for $Name"))
-    json_string = read(filename, String)
-    Narray = copy(JSON3.read(json_string))
-    return map(reshape(Narray, 12, 12, 12)) do x
-        y = Dict{NTuple{3,Int},Int}()
-        for (k, v) in x
-            a, b, c = parse.(Int, split(string(k)[2:(end - 1)], ", "))
-            y[(a, b, c)] = v
-        end
-        return y
+    filename = joinpath(artifact_path, "A4", "Nsymbol.txt")
+    isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for A4"))
+    Narray = readdlm(filename) # matrix with 7 columns
+
+    data_dict = Dict{NTuple{3,Int},Dict{NTuple{3,Int},Int}}()
+    for row in eachrow(Narray)
+        i, j, k, a, b, c, N = Int.(@view(row[1:size(A4Object)]))
+        colordict = get!(data_dict, (i, j, k), Dict{NTuple{3,Int},Int}())
+        push!(colordict, (a, b, c) => N)
     end
+
+    return data_dict
 end
 
-const Ncache = IdDict{Type{<:BimoduleSector},Array{Dict{NTuple{3,Int},Int},3}}()
+const Ncache = IdDict{Type{<:BimoduleSector},
+                      Dict{NTuple{3,Int},Dict{NTuple{3,Int},Int}}}()
 
 function _get_Ncache(::Type{T}) where {T<:BimoduleSector}
     global Ncache
@@ -102,7 +108,7 @@ end
 
 function extract_dual(::Type{A4Object})
     N = _get_Ncache(A4Object)
-    ncats = size(N, 1)
+    ncats = size(A4Object)
     Is = zeros(Int, ncats)
 
     map(1:ncats) do i
@@ -175,24 +181,22 @@ end
 
 function extract_Fsymbol(::Type{A4Object})
     result = Dict{NTuple{4,Int},Dict{NTuple{6,Int},Array{ComplexF64,4}}}()
-    for i in 1:12
-        filename = joinpath(artifact_path, "A4", "Fsymbol_$i.txt")
-        @assert isfile(filename) "cannot find $filename"
-        Farray_part = readdlm(filename)
-        for ((i, j, k, l), colordict) in convert_Fs(Farray_part)
-            result[(i, j, k, l)] = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
-            for ((a, b, c, d, e, f), Fvals) in colordict
-                a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
-                                                                (k, l, c), (i, l, d),
-                                                                (i, k, e), (j, l, f)))
-                result[(i, j, k, l)][(a, b, c, d, e, f)] = zeros(ComplexF64,
-                                                                 Nsymbol(a_ob, b_ob, e_ob),
-                                                                 Nsymbol(e_ob, c_ob, d_ob),
-                                                                 Nsymbol(b_ob, c_ob, f_ob),
-                                                                 Nsymbol(a_ob, f_ob, d_ob))
-                for (I, v) in Fvals
-                    result[(i, j, k, l)][(a, b, c, d, e, f)][I] = v
-                end
+    filename = joinpath(artifact_path, "A4", "Fsymbol.txt")
+    @assert isfile(filename) "cannot find $filename"
+    Farray = readdlm(filename)
+    for ((i, j, k, l), colordict) in convert_Fs(Farray)
+        result[(i, j, k, l)] = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
+        for ((a, b, c, d, e, f), Fvals) in colordict
+            a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
+                                                            (k, l, c), (i, l, d),
+                                                            (i, k, e), (j, l, f)))
+            result[(i, j, k, l)][(a, b, c, d, e, f)] = zeros(ComplexF64,
+                                                             Nsymbol(a_ob, b_ob, e_ob),
+                                                             Nsymbol(e_ob, c_ob, d_ob),
+                                                             Nsymbol(b_ob, c_ob, f_ob),
+                                                             Nsymbol(a_ob, f_ob, d_ob))
+            for (I, v) in Fvals
+                result[(i, j, k, l)][(a, b, c, d, e, f)][I] = v
             end
         end
     end
@@ -254,7 +258,8 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
     dom = domain(W)
     if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
         # this is a problem in full contractions where the coloring outside is 𝒞
-        return NTuple{12,A4Object}(one(A4Object(i, i, 1)) for i in 1:12) # have to return all units b/c no info on W in this case
+        return NTuple{size(A4Object),A4Object}(one(A4Object(i, i, 1))
+                                               for i in 1:size(A4Object)) # have to return all units b/c no info on W in this case
     elseif N₁ == 0
         @assert N₂ != 0 "one of Type A4Object doesn't exist"
         return filter!(isone, collect(blocksectors(dom)))
