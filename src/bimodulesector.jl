@@ -57,7 +57,7 @@ end
 
 # Data from files
 # ---------------
-const artifact_path = joinpath(artifact"fusiondata", "MultiTensorKit.jl-data-v0.1.2")
+const artifact_path = joinpath(artifact"fusiondata", "MultiTensorKit.jl-data-v0.1.3")
 
 function extract_Nsymbol(::Type{A4Object})
     filename = joinpath(artifact_path, "A4", "Nsymbol.json")
