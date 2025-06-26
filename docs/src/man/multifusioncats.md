@@ -78,7 +78,17 @@ i.e., it is decomposed into simple unit objects of the subcategories $\mathcal{C
 
 $$\mathcal{C} = \bigoplus_{i,j=1}^r \mathcal{C}_{ij}.$$
 
-We call this an $r \times r$ multifusion category. 
+We call this an $r \times r$ multifusion category. Due to this structure, we represent a simple object in the multifusion category "Name" by
+
+````julia
+struct BimoduleSector{Name} <: Sector
+    i::Int
+    j::Int
+    label::Int
+end
+````
+
+`i` and `j` specify which subcategory $\mathcal{C}_{ij}$ we are considering, and `label` selects a particular simple object within that subcategory.
 
 We want to consider multifusion categories because **their structure encapsulates that of (bi-)module categories**. Every diagonal category $\mathcal{C}_{ii} \coloneqq \mathcal{C}_i$ is a fusion category, and every off-diagonal category $\mathcal{C}_{ij}$ is an invertible $(\mathcal{C}_{i}, \mathcal{C}_{j})$-bimodule category. That way, as long as we know how the simple objects of the fusion and module categories fuse with one another, and we can determine all the monoidal and module associators, we can treat the multifusion category as one large fusion category with limited fusion rules. In particular, the tensor product 
 
@@ -100,8 +110,6 @@ $$\mathcal{C}_{ij} \times \mathcal{C}_{ji} \rightarrow \mathcal{C}_i,$$
 
 just like what we concluded when considering opposite module categories outside of the multifusion structure.
 ### 2-category and coloring
-diagrammatic calculus with coloring and such and so
-
 Multifusion categories can also be interpreted as 2-categories. We still interpret the objects of this 2-category the same way. The 1-morphisms are the subcategories themselves, and the 2-morphisms the morphisms of the multifusion category. The graphical calculus of monoidal 1-categories can be extended to 2-categories by use of *colorings*. We have previously differed between module strands and fusion strands by the color of the strand itself. However, in 2-categories the strands (1-morphisms) separate regions which are colored based on the objects they are representing. Since we draw the strands vertically, a single strand results in a left and right region, and the colorings will determine the fusion category which fuses from the left or right with that single strand. In particular, fusion strands necessarily have the same coloring on the left and right, while module strands have a mismatching coloring. 
 
 The simplest non-trivial fusion diagram is a trivalent junction:
@@ -112,8 +120,9 @@ The simplest non-trivial fusion diagram is a trivalent junction:
 
 The most general case is the top left figure, where all three regions have a different coloring. The top middle region having the same coloring from the top left and top right strands follow from the delta function in the tensor product definition. However, as will be explained more in detail later, this most general trivalent junction with three colorings will never be needed. In short, we will always be considering a single bimodule category $\mathcal{C}_{ij}$ at a time, and the only other non-diagonal subcategory which fuses with this is its opposite $\mathcal{C}_{ji}$. This is displayed in the top middle and right. Similarly, two colorings are required when considering the fusion between a fusion and module strand, shown in the bottom left and middle figure. The simplest trivalent junctions boil down to fusions within fusion categories, which is obviously drawn with just one color. This is shown in the bottom right.
 
+With this coloring system, we can specify which associator must be called to perform a particular F-move. SHOW THE COLORS
+
 ### Why opposite module categories end up being necessary in MultiTensorKit
-something something B-move of module leg
 
 One of the common manipulations which can act on a tensor map is the transposition of vector spaces. We will refer to this as the bending of legs. One of the elementary bends is the **right bend**, where one of the tensor legs is bent along the right from the codomain to the domain, or vice versa. At the level of the tensor, a covariant index becomes contravariant, or vice versa. Similarly, a **left bend** can also be performed, bending the leg along the left. This guarantees that legs will not cross, preventing braidings which require extra data known as R-symbols. 
 
@@ -158,4 +167,16 @@ where to say something about rewriting mpskit to be planar such that braidings w
 
 Without specifying any of the categories, the simplest non-trivial multifusion category is a $2\times 2$ one, and the categories can be organised in a matrix as
 
-$$\mathcal{C} = \begin{pmatrix} \end{pmatrix}$$
+$$\mathcal{C} = \begin{pmatrix} \mathcal{C}_1 & \mathcal{M} \\ \mathcal{M}^{\text{op}} & \mathcal{C}_2\end{pmatrix}.$$
+
+We already identified the off-diagonal elements with module categories over the fusion categories on the diagonal. Accordingly, $\mathcal{M}$ is a $(\mathcal{C}_1, \mathcal{C}_2)$-bimodule category, and $\mathcal{M}^{\text{op}}$ is the opposite module category and a $(\mathcal{C}_2, \mathcal{C}_1)$-bimodule category. 
+
+If we take $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep} \mathbb{Z}_2$ and $\mathcal{M} = \mathsf{Vec}$, then the entire multifusion category is isomorphic to the $\mathsf{Ising}$ category [etingof2016tensor; Example 4.10.5](@cite). We identify the trivial representation of $\mathsf{Rep} \mathbb{Z}_2$ with the unit of $\mathsf{Ising}$, the sign representation with $\psi$ and the unique object of $\mathsf{Vec}$ with the duality object $\sigma$. One can easily check that the fusion rules of $\mathsf{Ising}$ match with those we expect within $\mathsf{Rep} \mathbb{Z}_2$ and with its module category $\mathsf{Vec}$. Additionally, the fusion between $\mathsf{Vec}$ and $\mathsf{Vec}^\text{op}$ (and vice-versa) giving every object in $\mathcal{C}_1$ ($\mathcal{C}_2$) is consistent with $\sigma \times \sigma^* = 1 + \psi$. This particular example can be found in [TensorKitSectors](https://github.com/QuantumKitHub/TensorKitSectors.jl).
+
+This construction can be generalised to $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep_G}$ with $\mathsf{G}$ a finite abelian group, such that the entire multifusion category is isomorphic to the Tambara-Yamagami category $\mathsf{TY}(\mathsf{G})$ (with positive Frobenius-Schur indicator for our purposes), and $\mathsf{Vec}$ will represent the duality object which squares to all invertible objects of the original group. To be exact, one of the diagonal fusion categories should be $\mathsf{Vec_G}$ for the correct Morita dual relation, but it is known for abelian groups that this is isomorphic to $\mathsf{Rep_G}$.
+
+## Module and multifusion categories in condensed matter physics
+- boundaries of string-net models
+- generalised anyonic spin chain
+- moore-seiberg data -> modular invariant
+- modules as (conformal) boundary conditions

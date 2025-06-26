@@ -53,7 +53,7 @@ $\mathbb{C}_1 \otimes W \simeq W \simeq W \otimes \mathbb{C}_1$ | Trivial rep 1:
 $\mathbb{C}_g \otimes \mathbb{C}_{g^{-1}} = \mathbb{C}_1 = \mathbb{C}_{g^{-1}} \otimes \mathbb{C}_g$ | $\pi \otimes \overline{\pi} = 1 \oplus ...$ | Dual object
 $F:(V \otimes W) \otimes U \xrightarrow{\sim}V \otimes (W \otimes U)$|$F: (\pi_1 \otimes \pi_2) \otimes \pi_3 \xrightarrow{\sim} \pi_1 \otimes (\pi_2 \otimes \pi_3)$|F-symbol|
 
-# Fusion categories in condensed matter physics
+## Fusion categories in condensed matter physics
 - String-net models -> non-chiral topological order classification
 - Kitaev's appendix E -> anyonic excitations
 - Golden chain, anyonic spin chains
