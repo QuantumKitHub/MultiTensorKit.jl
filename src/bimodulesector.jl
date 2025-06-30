@@ -60,6 +60,10 @@ function _numlabels(::Type{T}, i, j) where {T<:BimoduleSector}
     return length(_get_dual_cache(T)[2][i, j])
 end
 
+# User-friendly functions
+# -------------------
+#TODO: add functions to identify categories
+
 # Data from files
 # ---------------
 const artifact_path = joinpath(artifact"fusiondata", "MultiTensorKit.jl-data-v0.1.3")
@@ -240,12 +244,13 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
     Nbcf = Nsymbol(b, c, f)
     Nafd = Nsymbol(a, f, d)
 
+    zero_array = zeros(sectorscalartype(I), Nabe, Necd, Nbcf, Nafd)
     Nabe > 0 && Necd > 0 && Nbcf > 0 && Nafd > 0 ||
-        return zeros(sectorscalartype(I), Nabe, Necd, Nbcf, Nafd)
+        return zero_array
 
     i, j, k, l = a.i, a.j, b.j, c.j
     colordict = _get_Fcache(I)[i, j, k, l]
-    return colordict[(a.label, b.label, c.label, d.label, e.label, f.label)]
+    return get!(colordict, (a.label, b.label, c.label, d.label, e.label, f.label), zero_array)
 end
 
 # interface with TensorKit where necessary
@@ -272,6 +277,17 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
         return filter!(c -> hasblock(dom, c), collect(blocksectors(codom)))
     end
 end
+
+#TODO: is this needed?
+# function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
+#                                                                 S<:GradedSpace{<:BimoduleSector}}
+#     _vector = findall(!iszero, t.data) # should have 0 or 1 elements, since only one of the blocks could be non-zero
+#     if isempty(_vector)
+#         return zero(scalartype(t))
+#     end
+#     unit = one(A4Object(only(_vector), only(_vector), 1))
+#     return only(block(t, unit))
+# end
 
 # TODO: definition for zero of GradedSpace?
 
