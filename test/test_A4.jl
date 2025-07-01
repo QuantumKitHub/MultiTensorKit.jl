@@ -48,15 +48,14 @@ end
     end
 end
 
-for i in 1:r, j in 1:r # M x D (or Mop x C)
+for i in 1:r, j in 1:r
     i != j || continue # skip if fusion category
     @testset "$Istr right module category $i, $j" begin
         mod_objects = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
         fusion_objects = I.(j, j, MultiTensorKit._get_dual_cache(I)[2][j, j])
 
-        @testset "Unitarity of module F-move $i, $j" begin
+        @testset "Unitarity of module F-move $i, $j" begin # written as MxD, but with i<->j checks MopxC
             for A in mod_objects, α in fusion_objects, β in fusion_objects
-                (A.j == α.i && α.j == β.i) || continue # skip if not compatible
                 for B in ⊗(A, α, β)
                     Cs = collect(intersect(⊗(A, α), map(dual, ⊗(β, dual(B)))))
                     γs = collect(intersect(⊗(α, β), map(dual, ⊗(dual(B), A))))
@@ -78,7 +77,7 @@ for i in 1:r, j in 1:r # M x D (or Mop x C)
     end
 end
 
-for i in 1:7, j in 1:7 # C x M (or D x Mop)
+for i in 1:7, j in 1:7 # C x M (or D x Mop with i<->j)
     i != j || continue # skip if fusion category
     @testset "$Istr left module category $i, $j unitarity check" begin
         mod_objects = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
@@ -86,7 +85,6 @@ for i in 1:7, j in 1:7 # C x M (or D x Mop)
 
         @testset "Unitarity of left module F-move" begin
             for a in fusion_objects, b in fusion_objects, A in mod_objects  # written for M as left C-module category
-                (a.j == b.i && b.j == A.i) || continue # skip if not compatible
                 for B in ⊗(a, b, A)
                     cs = collect(intersect(⊗(a, b), map(dual, ⊗(A, dual(B))))) # equivalent of es
                     Cs = collect(intersect(⊗(b, A), map(dual, ⊗(dual(B), a)))) # equivalent of fs
@@ -101,24 +99,22 @@ for i in 1:7, j in 1:7 # C x M (or D x Mop)
                         end
                     end
                     F = hvcat(length(Cs), Fblocks...)
-                    isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12) ||
-                        @show A, a, b, B, C, c, F
+                    @test isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12)
                 end
             end
         end
     end
 end
 
-for i in 1:7, j in 1:7 # bimodule check unitarity
+for i in 1:7, j in 1:7 # bimodule check unitarity (C x M x D or D x Mop x C)
     i != j || continue # skip if fusion category
     @testset "$Istr bimodule category $i, $j" begin
         C_objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i, i])
         mod_objects = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
         D_objects = I.(j, j, MultiTensorKit._get_dual_cache(I)[2][j, j])
 
-        @testset "Unitarity of bimodule F-move" begin
+        @testset "Unitarity of bimodule F-move" begin # written as CMD
             for a in C_objects, A in mod_objects, α in D_objects
-                (a.j == A.i && A.j == α.i) || continue # skip if not compatible
                 for B in ⊗(a, A, α)
                     Cs = collect(intersect(⊗(a, A), map(dual, ⊗(α, dual(B))))) # equivalent of es
                     Ds = collect(intersect(⊗(A, α), map(dual, ⊗(dual(B), a)))) # equivalent of fs
@@ -132,15 +128,44 @@ for i in 1:7, j in 1:7 # bimodule check unitarity
                                            size(Fs, 3) * size(Fs, 4))))
                         end
                     end
-                    count += 1
                     F = hvcat(length(Ds), Fblocks...)
-                    isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12) ||
-                        @show A, a, α, B, C, D, F
+                    @test isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12)
                 end
             end
         end
     end
 end
+
+for i in 1:7, j in 1:7 # M x Mop x M -> M (or Mop x M x Mop -> Mop)
+    i != j || continue # skip if not fusion category
+    @testset "$Istr Module category $i,$j and opposite $j,$i" begin
+        M_objects = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
+        Mop_objects = I.(j, i, MultiTensorKit._get_dual_cache(I)[2][j, i])
+        C_objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i,i])
+        D_objects = I.(j, j, MultiTensorKit._get_dual_cache(I)[2][j, j])
+
+        @testset "Unitarity of pure module F-move" begin
+            for A in M_objects, Aop in Mop_objects, B in M_objects # written for M x Mop x M -> M
+                for C in ⊗(A, Aop, B)
+                    cs = collect(intersect(⊗(A, Aop), map(dual, ⊗(B, dual(C))))) # equivalent of es
+                    γs = collect(intersect(⊗(Aop, B), map(dual, ⊗(dual(C), A)))) # equivalent of fs
+                    Fblocks = Vector{Any}()
+                    for c in cs
+                        for γ in γs
+                            Fs = Fsymbol(A, Aop, B, C, c, γ)
+                            push!(Fblocks,
+                                    reshape(Fs,
+                                            (size(Fs, 1) * size(Fs, 2),
+                                            size(Fs, 3) * size(Fs, 4))))
+                        end
+                    end
+                    F = hvcat(length(γs), Fblocks...)
+                    @test isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12)
+                end
+            end
+        end
+    end
+end 
 
 @testset "$Istr Pentagon equation" begin
     objects = collect(values(I))
@@ -150,7 +175,7 @@ end
             for c in objects
                 b.j == c.i || continue # skip if not compatible
                 for d in objects
-                    c.j == d.i || continue # skip if not compatible #TODO: check if this is right
+                    c.j == d.i || continue # skip if not compatible
                     @test pentagon_equation(a, b, c, d; atol=1e-12, rtol=1e-12)
                 end
             end
