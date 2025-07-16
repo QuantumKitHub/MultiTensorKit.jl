@@ -376,11 +376,9 @@ end
 
 function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
                                                                 S<:GradedSpace{<:BimoduleSector}}
-    inds = findall(!iszero ∘ last, blocks(t))
+    Bs = collect(blocks(t))
+    inds = findall(!iszero ∘ last, Bs)
     isempty(inds) && return zero(scalartype(t))
-    @assert length(inds) == 1
-    
-    c = blocksectors(t)[only(inds)]
-    return only(block(t, c))
+    return only(last(Bs[only(inds)]))
 end
 
