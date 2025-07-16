@@ -373,3 +373,14 @@ function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}; # want no defa
     end
     return ProductSpace(TupleTools.insertafter(P.spaces, i - 1, (u,)))
 end
+
+function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
+                                                                S<:GradedSpace{<:BimoduleSector}}
+    inds = findall(!iszero ∘ last, blocks(t))
+    isempty(inds) && return zero(scalartype(t))
+    @assert length(inds) == 1
+    
+    c = blocksectors(t)[only(inds)]
+    return only(block(t, c))
+end
+
