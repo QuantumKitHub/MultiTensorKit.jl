@@ -141,11 +141,74 @@ for i in 1:7, j in 1:7 # M x Mop x M -> M (or Mop x M x Mop -> Mop)
     @testset "$Istr Module category $i,$j and opposite $j,$i" begin
         M_objects = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
         Mop_objects = I.(j, i, MultiTensorKit._get_dual_cache(I)[2][j, i])
-        C_objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i,i])
+        C_objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i, i])
         D_objects = I.(j, j, MultiTensorKit._get_dual_cache(I)[2][j, j])
 
+        @testset "Unitarity of mixed module F-move I" begin # written for C x M x Mop -> C but also holds for D x Mop x M -> D
+            for α in C_objects, A in M_objects, Aop in Mop_objects
+                for β in ⊗(α, A, Aop)
+                    Cs = collect(intersect(⊗(α, A), map(dual, ⊗(Aop, dual(β))))) # equivalent of es
+                    γs = collect(intersect(⊗(Aop, A), map(dual, ⊗(dual(β), α)))) # equivalent of fs
+                    Fblocks = Vector{Any}()
+                    for C in Cs
+                        for γ in γs
+                            Fs = Fsymbol(α, A, Aop, β, C, γ)
+                            push!(Fblocks,
+                                  reshape(Fs,
+                                          (size(Fs, 1) * size(Fs, 2),
+                                           size(Fs, 3) * size(Fs, 4))))
+                        end
+                    end
+                    F = hvcat(length(γs), Fblocks...)
+                    @test isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12)
+                end
+            end
+        end
+
+        @testset "Unitarity of mixed module F-move II" begin # written for M x Mop x C -> C but also holds for Mop x M x D -> D
+            for A in M_objects, Aop in Mop_objects, α in C_objects
+                for β in ⊗(A, Aop, α)
+                    γs = collect(intersect(⊗(A, Aop), map(dual, ⊗(α, dual(β))))) # equivalent of es
+                    Bops = collect(intersect(⊗(Aop, α), map(dual, ⊗(dual(β), A)))) # equivalent of fs
+                    Fblocks = Vector{Any}()
+                    for γ in γs
+                        for Bop in Bops
+                            Fs = Fsymbol(A, Aop, α, β, γ, Bop)
+                            push!(Fblocks,
+                                  reshape(Fs,
+                                          (size(Fs, 1) * size(Fs, 2),
+                                           size(Fs, 3) * size(Fs, 4))))
+                        end
+                    end
+                    F = hvcat(length(Bops), Fblocks...)
+                    @test isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12)
+                end
+            end
+        end
+
+        @testset "Unitarity of mixed module F-move III" begin # written for Mop x C x M -> D, but also holds for M x D x Mop -> C
+            for Aop in Mop_objects, α in C_objects, A in M_objects
+                for a in ⊗(Aop, α, A)
+                    Bops = collect(intersect(⊗(Aop, α), map(dual, ⊗(A, dual(a))))) # equivalent of es
+                    Bs = collect(intersect(⊗(α, A), map(dual, ⊗(dual(a), Aop)))) # equivalent of fs
+                    Fblocks = Vector{Any}()
+                    for Bop in Bops
+                        for B in Bs
+                            Fs = Fsymbol(Aop, α, A, a, Bop, B)
+                            push!(Fblocks,
+                                  reshape(Fs,
+                                          (size(Fs, 1) * size(Fs, 2),
+                                           size(Fs, 3) * size(Fs, 4))))
+                        end
+                    end
+                    F = hvcat(length(Bs), Fblocks...)
+                    @test isapprox(F' * F, one(F); atol=1e-12, rtol=1e-12)
+                end
+            end
+        end
+
         @testset "Unitarity of pure module F-move" begin
-            for A in M_objects, Aop in Mop_objects, B in M_objects # written for M x Mop x M -> M
+            for A in M_objects, Aop in Mop_objects, B in M_objects # written for M x Mop x M -> M but also holds for Mop x M x Mop -> Mop
                 for C in ⊗(A, Aop, B)
                     cs = collect(intersect(⊗(A, Aop), map(dual, ⊗(B, dual(C))))) # equivalent of es
                     γs = collect(intersect(⊗(Aop, B), map(dual, ⊗(dual(C), A)))) # equivalent of fs
@@ -154,9 +217,9 @@ for i in 1:7, j in 1:7 # M x Mop x M -> M (or Mop x M x Mop -> Mop)
                         for γ in γs
                             Fs = Fsymbol(A, Aop, B, C, c, γ)
                             push!(Fblocks,
-                                    reshape(Fs,
-                                            (size(Fs, 1) * size(Fs, 2),
-                                            size(Fs, 3) * size(Fs, 4))))
+                                  reshape(Fs,
+                                          (size(Fs, 1) * size(Fs, 2),
+                                           size(Fs, 3) * size(Fs, 4))))
                         end
                     end
                     F = hvcat(length(γs), Fblocks...)
@@ -165,7 +228,15 @@ for i in 1:7, j in 1:7 # M x Mop x M -> M (or Mop x M x Mop -> Mop)
             end
         end
     end
-end 
+end
+
+@testset "Triangle equation" begin
+    objects = collect(values(I))
+    for a in objects, b in objects
+        a.j == b.i || continue # skip if not compatible
+        @test triangle_equation(a, b; atol=1e-12, rtol=1e-12)
+    end
+end
 
 @testset "$Istr Pentagon equation" begin
     objects = collect(values(I))
