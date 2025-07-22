@@ -148,7 +148,7 @@ for i in 1:7, j in 1:7 # M x Mop x M -> M (or Mop x M x Mop -> Mop)
             for α in C_objects, A in M_objects, Aop in Mop_objects
                 for β in ⊗(α, A, Aop)
                     Cs = collect(intersect(⊗(α, A), map(dual, ⊗(Aop, dual(β))))) # equivalent of es
-                    γs = collect(intersect(⊗(Aop, A), map(dual, ⊗(dual(β), α)))) # equivalent of fs
+                    γs = collect(intersect(⊗(A, Aop), map(dual, ⊗(dual(β), α)))) # equivalent of fs
                     Fblocks = Vector{Any}()
                     for C in Cs
                         for γ in γs
