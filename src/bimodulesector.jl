@@ -278,19 +278,6 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
     end
 end
 
-#TODO: is this needed?
-# function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
-#                                                                 S<:GradedSpace{<:BimoduleSector}}
-#     _vector = findall(!iszero, t.data) # should have 0 or 1 elements, since only one of the blocks could be non-zero
-#     if isempty(_vector)
-#         return zero(scalartype(t))
-#     end
-#     unit = one(A4Object(only(_vector), only(_vector), 1))
-#     return only(block(t, unit))
-# end
-
-# TODO: definition for zero of GradedSpace?
-
 function dim(V::GradedSpace{<:BimoduleSector})
     T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
     return reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(T))
@@ -316,9 +303,6 @@ function rightoneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.j for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S do not have the same rightone"))
 
-    allequal(a.i for a in sectors(S)) ||
-        throw(ArgumentError("sectors of $S are not all equal"))
-
     sector = rightone(first(sectors(S)))
     return spacetype(S)(sector => 1)
 end
@@ -331,9 +315,6 @@ end
 function leftoneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.i for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S do not have the same leftone"))
-
-    allequal(a.j for a in sectors(S)) ||
-        throw(ArgumentError("sectors of $S are not all equal"))
 
     sector = leftone(first(sectors(S)))
     return spacetype(S)(sector => 1)
@@ -381,4 +362,3 @@ function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
     isempty(inds) && return zero(scalartype(t))
     return only(last(Bs[only(inds)]))
 end
-
