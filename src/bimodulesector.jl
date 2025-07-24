@@ -12,6 +12,17 @@ end
 BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
 const A4Object = BimoduleSector{:A4}
 
+Base.convert(::Type{<:BimoduleSector{Name}}, labels::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(labels...)
+
+function Base.show(io::IO, a::BimoduleSector{Name}) where {Name}
+    if get(io, :typeinfo, nothing) === typeof(a)
+        print(io, (a.i, a.j, a.label))
+    else
+        print(io, typeof(a), (a.i, a.j, a.label))
+    end
+    return nothing
+end
+
 # Utility implementations
 # -----------------------
 function Base.isless(a::I, b::I) where {I<:BimoduleSector}
