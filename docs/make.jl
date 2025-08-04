@@ -3,7 +3,7 @@ using DocumenterCitations
 using MultiTensorKit
 
 pages = ["Home" => "index.md", "Library" => "lib/library.md",
-         "Manual" => ["man/fusioncats.md", "man/multifusioncats.md"],
+         "Manual" => ["man/fusioncats.md", "man/multifusioncats.md", "man/implementation.md"],
          "References" => "references.md"]
 
 # bibliography
