@@ -1,9 +1,9 @@
 explain the f-symbol and n-symbol storage system
 
 # MultiTensorKit implementation: $\mathsf{Rep_{A_4}}$ as an example
-This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations. In particular, we will be making a generalised anyonic spin chain. We will demonstrate ... (not sure yet what we're going to show here). 
+This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations. In particular, we will be making a generalised anyonic spin chain. We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite). The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
 
-This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep_{A_4}}$. Since there are 12 module categories (technically only 8 up to equivalence), `A4Object` is a $r=12$ multifusion category. There are 3 fusion categories up to equivalence:
+This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep_{A_4}}$. Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category. There are 3 fusion categories up to equivalence:
 - $\mathsf{Vec A_4}$: the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$. It has thus 12 objects.
 - $\mathsf{Rep_{A_4}}$: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4. One is the trivial representation, two are one-dimension non-trivial and the last is three-dimensional.
 - $\mathsf{Rep H}$: the representation category of some Hopf algebra which does not have a name. It has 6 simple objects.
@@ -13,11 +13,20 @@ using TensorKit, MultiTensorKit, MPSKit, MPSKitModels
 ````
 
 ## Identifying the simple objects
-We first need to select which fusion category we wish to use to grade the physical Hilbert space, and which fusion category to represent e.g. the symmetry category. Say we choose $\mathcal{D} = \mathsf{Vec A_4}$ for the physical Hilbert space and $\mathcal{C} = \mathcal{D}^*_{\mathcal{M}} = \mathsf{Rep_{A_4}}$ the symmetry category. This fixes the module category $\mathcal{M} = \mathsf{Vec}$. When referring to specific fusion and module categories, we will use this non-multifusion notation.
+We first need to select which fusion category we wish to use to grade the physical Hilbert space, and which fusion category to represent e.g. the symmetry category. In our case, we are interested in selecting $\mathcal{D} = \mathsf{Rep(A_4)}$ for the physical Hilbert space. We know the module categories over $\mathsf{Rep(G)}$ to be $\mathsf{Rep^\psi(H)}$ for a subgroup $\mathsf{H} and 2-cocycle $\psi$. Thus, the 7 module categories $\mathcal{M}$ one can choose over $\mathsf{Rep(A_4)}$ are
+- $\mathsf{Rep(A_4)}$ itself as the regular module category,
+- $\mathsf{Vec}$: the category of vector spaces,
+- $\mathsf{Rep(\mathbb{Z}_2)}$,
+- $\mathsf{Rep(\mathbb{Z}_3)}$,
+- $\mathsf{Rep(\mathbb{Z}_2 \times \mathbb{Z}_2)}$,
+- $\mathsf{Rep^\psi(\mathbb{Z}_2 \times \mathbb{Z}_2)}$,
+- $\mathsf{Rep^\psi(A_4)}$.
+  
+When referring to specific fusion and module categories, we will use this non-multifusion notation.
 
 The easiest way to identify which elements of the multifusion category correspond to the subcategories we wish to use is ... (not sure yet how to do this yet)
 
-Once we have identified the fusion and module categories, we now want to select the relevant objects we wish to place in our graded spaces. Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label=1` corresponds to the unit object. Hence, the simplest way to find the unit object of a fusion subcategory is
+Now that we have identified the fusion and module categories, we want to select the relevant objects we wish to place in our graded spaces. Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label=1` corresponds to the unit object. Hence, the simplest way to find the unit object of a fusion subcategory is
 
 ````julia
 one(A4Object(i,i,1))
@@ -39,24 +48,71 @@ The dual object of some simple object $a$ of an arbitrary subcategory $\mathcal{
 $$ ^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* \times a,$$
 
 with multiplicity 1.
-## Matrix product state simulations with MPSKit
-TensorKit has been made compatible with the multifusion structure by keeping track of the relevant units in the fusion tree manipulations. With this, we can make `GradedSpace`s whose objects are in `A4Object`. With our example in mind, we first select the objects:
+## Hamiltonian
+TensorKit has been made compatible with the multifusion structure by keeping track of the relevant units in the fusion tree manipulations. With this, we can make `GradedSpace`s whose objects are in `A4Object`: 
 
 ````julia
-D0 = one(A4Object(2,2,1)) # unit object of VecA4
-D1 = A4Object(2,2,2) # some self-dual object of VecA4
+D1 = A4Object(6, 6, 1) # unit in this case
+D2 = A4Object(6, 6, 2) # non-trivial 1d irrep
+D3 = A4Object(6, 6, 3) # non-trivial 1d irrep
+D4 = A4Object(6, 6, 4) # 3d irrep
 
-M = A4Object(1,2,1) # Vec
-
-C0 = one(A4Object(1,1,1)) # unit object of RepA4
-C1 = A4Object(1,1,1) # non-trivial 1d irrep
 ````
+Since we want to replicate a spin-1 Heisenberg model, it makes sense to use the 3-dimensional irrep to grade the physical space, and thus construct our Hamiltonian. We don't illustrate here how to derive the considered Hamiltonian in a $\mathsf{Rep(A_4)}$ basis, but simply give it.
 
-Afterwards, we build the physical and virtual space of the matrix product state:
 ````julia
-P = Vect[A4Object](D0 => 1, D1 => 1)
-V = Vect[A4Object](M => D) # D is the bond dimension
+P = Vect[A4Object](D4 => 1) # physical space
+T = ComplexF64
+# usual Heisenberg part
+h1_L = TensorMap(zeros, T, P ⊗ P ← P)
+h1_R = TensorMap(zeros, T, P ← P ⊗ P)
+block(h1_L, D4) .= [0; 1]
+block(h1_R, D4) .= [0 1;]
+@plansor h1[-1 -2; -3 -4] := h1_L[-1 1; -3] * h1_R[-2; 1 -4]
+
+# biquadratic term
+h2_L = TensorMap(zeros, T, P ⊗ Vect[A4Object](D1 => 1, D2 => 1, D3 => 1) ← P)
+h2_R = TensorMap(ones, T, P ← Vect[A4Object](D1 => 1, D2 => 1, D3 => 1) ⊗ P)
+block(h2_L, D4) .= [4 / 3; 1 / 3; 1 / 3]
+@plansor h2[-1 -2; -3 -4] := h2_L[-1 1; -3] * h2_R[-2; 1 -4]
+
+# anti-commutation term
+h3_L = TensorMap(zeros, T, P ⊗ P ← P)
+h3_R = TensorMap(zeros, T, P ← P ⊗ P)
+block(h3_L, D4) .= [1; 0]
+block(h3_R, D4) .= [0 1;]
+@plansor h3[-1 -2; -3 -4] := h3_L[-1 1; -3] * h3_R[-2; 1 -4]
+
+L = 60
+J1 = 1.0 # probing the A4 SPT phase first
+J2 = 1.0
+lattice = FiniteChain(L)
+H1 = @mpoham sum(-2 * h1{i,j} for (i, j) in nearest_neighbours(lattice))
+H2 = @mpoham sum(h2{i,j} for (i, j) in nearest_neighbours(lattice))
+H3 = @mpoham sum(2im * h3{i,j} for (i, j) in nearest_neighbours(lattice))
+
+H = H1 + J1 * H2 + J3 * H3
 ````
+
+
+## Constructing the matrix product state
+For now, we will select $\mathsf{Vec}$ as the module category:
+````julia
+M = A4Object(1, 6, 1) # Vec
+````
+
+ Afterwards, we build the physical and virtual space of the matrix product state:
+````julia
+D = 40 # bond dimension
+V = Vect[A4Object](M => D)
+Vb = Vect[A4Object](M => 1) # non-degenerate boundary virtual space
+init_mps = FiniteMPS(L, P, V; left=Vb, right=Vb)
+````
+> [!IMPORTANT]
+> We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for `BimoduleSector` due to the semisimple unit. 
+
+
+
 ### Infinite case
 Now, using MPKSit, we can perform matrix product state calculations. We construct some nearest-neighbour Hamiltonian and find the MPS representation of the ground state.
 ````julia

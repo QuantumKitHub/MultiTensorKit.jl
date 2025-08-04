@@ -90,7 +90,7 @@ end
 
 `i` and `j` specify which subcategory $\mathcal{C}_{ij}$ we are considering, and `label` selects a particular simple object within that subcategory.
 
-We want to consider multifusion categories because **their structure encapsulates that of (bi-)module categories**. Every diagonal category $\mathcal{C}_{ii} \coloneqq \mathcal{C}_i$ is a fusion category, and every off-diagonal category $\mathcal{C}_{ij}$ is an invertible $(\mathcal{C}_{i}, \mathcal{C}_{j})$-bimodule category. That way, as long as we know how the simple objects of the fusion and module categories fuse with one another, and we can determine all the monoidal and module associators, we can treat the multifusion category as one large fusion category with limited fusion rules. In particular, the tensor product 
+We want to consider multifusion categories because **their structure encapsulates that of (bi-)module categories**. Every diagonal category $\mathcal{C}_{ii} \coloneqq \mathcal{C}_i$ (also known as a component category) is a fusion category, and every off-diagonal category $\mathcal{C}_{ij}$ is an invertible $(\mathcal{C}_{i}, \mathcal{C}_{j})$-bimodule category. That way, as long as we know how the simple objects of the fusion and module categories fuse with one another, and we can determine all the monoidal and module associators, we can treat the multifusion category as one large fusion category with limited fusion rules. In particular, the tensor product 
 
 $$\otimes_\mathcal{C}: \mathcal{C}_{ij} \times \mathcal{C}_{kl} \rightarrow \delta_{jk}\mathcal{C}_{il}$$
 
@@ -152,19 +152,17 @@ where by $\mathbb{1}_a$ we mean the right unit of $a$ (the left unit we would de
 Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{a \bar{a} a}_{a}$ needs to be evaluated for these topological data. Graphically, we find that
 
 ```@raw html
-<img src="../img/qdim_fs_MF.svg" alt="" width="50%" class="center"/>
+<img src="../img/qdim_fs_MF.svg" alt="" width="50%"/>
 ``` 
 
 need to show other changed expressions like A-move, dimension, frobenius-schur indicator, what else outside of TensorKitSectors in terms of fusion tree manipulations?
 
 no figures up till now with arrows, will this even be necessary? maybe if we show B-moves with M->Mop
 
+### Braiding
+A very important aspect of MultiTensorKit is that all `BimoduleSector`s are defined to *not* support braiding: `TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()`. We do this for two reasons. On the one hand, there is no natural 1-categorical way of defining braidings between the components of the multifusion category. It is possible that the diagonal fusion categories themselves are braided, but a "componentwise" braiding is unwise to support. On the other hand, it is entirely possible to write matrix product state manipulations in a planar manner (which has been done in [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl)), thus avoiding the need of a braiding tensor. 
+
 ## Examples of multifusion categories
-2x2 thing that is isomorphic to ising
-generalisation to Tambara-Yamagami
-
-where to say something about rewriting mpskit to be planar such that braidings with module legs are avoided?
-
 Without specifying any of the categories, the simplest non-trivial multifusion category is a $2\times 2$ one, and the categories can be organised in a matrix as
 
 $$\mathcal{C} = \begin{pmatrix} \mathcal{C}_1 & \mathcal{M} \\ \mathcal{M}^{\text{op}} & \mathcal{C}_2\end{pmatrix}.$$
