@@ -2,8 +2,9 @@ using Documenter
 using DocumenterCitations
 using MultiTensorKit
 
-pages = ["Home" => "index.md", "Library" => "lib/library.md",
+pages = ["Home" => "index.md",
          "Manual" => ["man/fusioncats.md", "man/multifusioncats.md", "man/implementation.md"],
+         "Library" => "lib/library.md",
          "References" => "references.md"]
 
 # bibliography
