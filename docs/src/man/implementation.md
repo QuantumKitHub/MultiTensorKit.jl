@@ -3,24 +3,26 @@ explain the f-symbol and n-symbol storage system
 # MultiTensorKit implementation: $\mathsf{Rep(A_4)}$ as an example
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations. In particular, we will be making a generalised anyonic spin chain. We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite). The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
 
-This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep_{A_4}}$. Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category. There are 3 fusion categories up to equivalence:
-- $\mathsf{Vec_{A_4}}$, the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$. It has thus 12 objects.
-- $\mathsf{Rep(A_4)}$: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4. One is the trivial representation, two are one-dimensional non-trivial and the last is three-dimensional.
-- $\mathsf{Rep(H)}$: the representation category of some Hopf algebra which does not have a name. It has 6 simple objects.
+This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep(A_4)}$. Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category. There are 3 fusion categories up to equivalence:
+- ``\mathsf{Vec_{A_4}}``: the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$. It has thus 12 objects.
+- ``\mathsf{Rep(A_4)}``: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4. One is the trivial representation, two are one-dimensional non-trivial and the last is three-dimensional.
+- ``\mathsf{Rep(H)}``: the representation category of some Hopf algebra which does not have a name. It has 6 simple objects.
 
+For this example, we will require the following packages:
 ````julia
 using TensorKit, MultiTensorKit, MPSKit, MPSKitModels
 ````
 
 ## Identifying the simple objects
-We first need to select which fusion category we wish to use to grade the physical Hilbert space, and which fusion category to represent e.g. the symmetry category. In our case, we are interested in selecting $\mathcal{D} = \mathsf{Rep(A_4)}$ for the physical Hilbert space. We know the module categories over $\mathsf{Rep(G)}$ to be $\mathsf{Rep^\psi(H)}$ for a subgroup $\mathsf{H} and 2-cocycle $\psi$. Thus, the 7 module categories $\mathcal{M}$ one can choose over $\mathsf{Rep(A_4)}$ are
-- $\mathsf{Rep(A_4)}$ itself as the regular module category,
-- $\mathsf{Vec}$: the category of vector spaces,
-- $\mathsf{Rep(\mathbb{Z}_2)}$,
-- $\mathsf{Rep(\mathbb{Z}_3)}$,
-- $\mathsf{Rep(\mathbb{Z}_2 \times \mathbb{Z}_2)}$,
-- $\mathsf{Rep^\psi(\mathbb{Z}_2 \times \mathbb{Z}_2)}$,
-- $\mathsf{Rep^\psi(A_4)}$.
+We first need to select which fusion category we wish to use to grade the physical Hilbert space, and which fusion category to represent e.g. the symmetry category. In our case, we are interested in selecting $\mathcal{D} = \mathsf{Rep(A_4)}$ for the physical Hilbert space. We know the module categories over $\mathsf{Rep(G)}$ to be $\mathsf{Rep^\psi(H)}$ for a subgroup $\mathsf{H}$ and 2-cocycle $\psi$. Thus, the 7 module categories $\mathcal{M}$ one can choose over $\mathsf{Rep(A_4)}$ are
+
+- ``\mathsf{Rep(A_4)}`` itself as the regular module category,
+- ``\mathsf{Vec}``: the category of vector spaces,
+- ``\mathsf{Rep(\mathbb{Z}_2)}``,
+- ``\mathsf{Rep(\mathbb{Z}_3)}``,
+- ``\mathsf{Rep(\mathbb{Z}_2 \times \mathbb{Z}_2)}``,
+- ``\mathsf{Rep^\psi(\mathbb{Z}_2 \times \mathbb{Z}_2)}``,
+- ``\mathsf{Rep^\psi(A_4)}``.
   
 When referring to specific fusion and module categories, we will use this non-multifusion notation.
 
@@ -34,7 +36,7 @@ one(A4Object(i,i,1))
 
 Left and right units of subcategories are uniquely specified by their fusion rules. For example, the left unit of a subcategory $\mathcal{C}_{ij}$ is the simple object in $\mathcal{C}_i$ for which
 
-$$ ^{}_a \mathbb{1} \times a = a \quad \forall a \in \mathcal{C}_i.$$
+$$^{}_a \mathbb{1} \times a = a \quad \forall a \in \mathcal{C}_i.$$
 
 A similar condition uniquely defines the right unit of a subcategory. For fusion subcategories, a necessary condition is that the left and right units coincide.
 
@@ -45,7 +47,7 @@ Identifying the other simple objects of a (not necessarily fusion) category requ
 
 The dual object of some simple object $a$ of an arbitrary subcategory $\mathcal{C}_{ij}$ is defined as the unique object $a^* \in \mathcal{C}_{ji}$ satisfying
 
-$$ ^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* \times a,$$
+$$^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* \times a,$$
 
 with multiplicity 1.
 ## Constructing the Hamiltonian and matrix product state
@@ -104,8 +106,9 @@ V = Vect[A4Object](M => D)
 Vb = Vect[A4Object](M => 1) # non-degenerate boundary virtual space
 init_mps = FiniteMPS(L, P, V; left=Vb, right=Vb)
 ````
-> [!IMPORTANT]
-> We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit. 
+
+!!! warning "Important"
+    We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit. 
 
 ## DMRG2 and the entanglement spectrum
 We can now look to find the ground state of the Hamiltonian with two-site DMRG. We use this instead of the "usual" one-site DMRG because the two-site one will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations. 
@@ -128,7 +131,13 @@ This plot will show the singular values per object, as well as include the "effe
 
 ## Search for the correct dual model
 
-Consider a quantum lattice model with its symmetries determing the phase diagram. For every phase in the phase diagram, the dual model for which the ground state maximally breaks all symmetries spontaneously is the one where the entanglement is minimised and the tensor network is represented most efficiently [Lootens_2024](@cite). Let us confirm this result, starting with the $\mathsf{Rep(A_4)}$ spontaneous symmetry breaking phase.
+Consider a quantum lattice model with its symmetries determing the phase diagram. For every phase in the phase diagram, the dual model for which the ground state maximally breaks all symmetries spontaneously is the one where the entanglement is minimised and the tensor network is represented most efficiently [Lootens_2024](@cite). Let us confirm this result, starting with the $\mathsf{Rep(A_4)}$ spontaneous symmetry breaking phase. The code will look exactly the same as above, except the virtual space of the MPS will change to be graded by the other module categories:
+
+````julia
+module_numlabels(i) = MultiTensorKit._numlabels(A4Object, i, 6) 
+V = Vect[A4Object](A4Object(i, 6, label) => D for label in 1:module_numlabels(i))
+Vb = Vect[A4Object](c => 1 for c in first(sectors(V))) # not all charges on boundary, play around with what is there
+````
 
 
 

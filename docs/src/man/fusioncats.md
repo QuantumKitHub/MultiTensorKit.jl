@@ -26,14 +26,14 @@ This way, we can describe fusion categories by a triple $(\otimes, 1_\mathcal{C}
 
 Vectors in these hom-spaces are graphically denoted as living in the trivalent junction
 ```@raw html
-<img src="../img/homvector.svg" alt="" width="50%" class="center"/>
+<img src="../img/homvector.svg" alt="" width="50%" class="center color-invertible"/>
 ``` 
 
 
 With the F-symbol, we can perform F-moves:
 
 ```@raw html
-<img src="../img/Fmove.svg" alt="" width="100%"/>
+<img src="../img/Fmove.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 TensorKit requires the F-symbols to be unitary. This way, we can interpret the F-symbol $F^{ijk}_l$ as a unitary matrix, and the F-move as a unitary basis transformation. Unitarity is also useful from a diagrammatic point of view because the category is then equipped with a pivotal and spherical structure. This essentially means that morphisms can be drawn and moved around freely on a 2-sphere, such that vector spaces can be moved freely from domain (codomain) to codomain (domain). 

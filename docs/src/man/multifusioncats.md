@@ -10,7 +10,7 @@ $${}^\mathcal{D}\!F^{\alpha \beta \gamma}: \alpha \otimes (\beta \otimes \gamma)
  the **monoidal associator**.  An F-move is now graphically portrayed as:
 
 ```@raw html
-<img src="../img/Fmove_D.svg" alt="" width="100%"/>
+<img src="../img/Fmove_D.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 We can consider the **right module category** $\mathcal{M}$ over $\mathcal{D}$, which is a category (not necessarily fusion!) with (isomorphism classes of) simple objects $\mathcal{I}_\mathcal{M} = \{A,B,...\}$, a right action 
@@ -24,7 +24,7 @@ $${}^\triangleleft\!F^{A\alpha\beta}: A \triangleleft (\alpha \otimes \beta) \ri
 An F-move with this module associator can be expressed as:
 
 ```@raw html
-<img src="../img/Fmove_MD.svg" alt="" width="100%"/>
+<img src="../img/Fmove_MD.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 The module structure of $\mathcal{M}$ is now defined as the triple $(\mathcal{M}, \triangleleft, {}^\triangleleft\!F)$. The right module associator now satisfies a mixed pentagon equation with ${}^\mathcal{D}\!F$. 
@@ -40,7 +40,7 @@ $${}^\triangleright\!F^{abA}: (a \otimes b) \triangleright A \rightarrow a \tria
 for $\mathcal{I}_\mathcal{C} = \{a,b,...\}$. The left module associator also fulfills a mixed pentagon equation with ${}^\mathcal{C}\!F$. An F-move with ${}^\mathcal{C}\!F$ takes on the form:
 
 ```@raw html
-<img src="../img/Fmove_CM.svg" alt="" width="100%"/>
+<img src="../img/Fmove_CM.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 We can combine the concepts of left and right module categories as follows. Say there are two fusion categories $\mathcal{C}$ and $\mathcal{D}$. A $(\mathcal{C}, \mathcal{D})$-**bimodule category** is a module category, now defined through a sextuple $(\mathcal{M}, \triangleright, \triangleleft, {}^\triangleright\!F, {}^\triangleleft\!F, {}^{{\triangleright \hspace{-1.2mu}\triangleleft}}\!F)$ such that $(\mathcal{M}, \triangleright, {}^\triangleright\!F)$ is a left $\mathcal{C}$-module category, and $(\mathcal{M}, \triangleleft, {}^\triangleleft\!F)$ is a right $\mathcal{D}$-module category, and with additional structure such that the **bimodule associator** acts as 
@@ -50,7 +50,7 @@ $${}^{{\triangleright \hspace{-1.2mu}\triangleleft}}\!F^{aA\alpha}: (a \triangle
 for $a \in \mathcal{I}_\mathcal{C}, \alpha \in \mathcal{I}_\mathcal{D}, A \in \mathcal{I}_\mathcal{M}$. The bimodule associator fulfills a mixed pentagon equation with the module associators. An F-move with ${}^{{\triangleright \hspace{-1.2mu}\triangleleft}}\!F$ is given by:
 
 ```@raw html
-<img src="../img/Fmove_CMD.svg" alt="" width="100%"/>
+<img src="../img/Fmove_CMD.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 ## Opposite module categories
 Consider a fusion category $\mathcal{D}$ and a *right* module category $\mathcal{M}$ over $\mathcal{D}$. We can define $\mathcal{M}^{\text{op}}$ to be the opposite category of $\mathcal{M}$ [etingof2009](@cite). Then $\mathcal{M}^{\text{op}}$ is a *left* module category over $\mathcal{D}$. A similar statement can be made starting from a left module category and getting an opposite right module category. In particular, given a $(\mathcal{C}, \mathcal{D})$-bimodule category $\mathcal{M}$ over the fusion categories $\mathcal{C}, \mathcal{D}$, we see immediately that $\mathcal{M}^{\text{op}}$ is a $(\mathcal{D}, \mathcal{C})$-bimodule category.
@@ -115,7 +115,7 @@ Multifusion categories can also be interpreted as 2-categories. We still interpr
 The simplest non-trivial fusion diagram is a trivalent junction:
 
 ```@raw html
-<img src="../img/Nsymbol_coloring.svg" alt="" width="100%"/>
+<img src="../img/Nsymbol_coloring.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 The most general case is the top left figure, where all three regions have a different coloring. The top middle region having the same coloring from the top left and top right strands follow from the delta function in the tensor product definition. However, as will be explained more in detail later, this most general trivalent junction with three colorings will never be needed. In short, we will always be considering a single bimodule category $\mathcal{C}_{ij}$ at a time, and the only other non-diagonal subcategory which fuses with this is its opposite $\mathcal{C}_{ji}$. This is displayed in the top middle and right. Similarly, two colorings are required when considering the fusion between a fusion and module strand, shown in the bottom left and middle figure. The simplest trivalent junctions boil down to fusions within fusion categories, which is obviously drawn with just one color. This is shown in the bottom right.
@@ -123,7 +123,7 @@ The most general case is the top left figure, where all three regions have a dif
 With this coloring system, we can specify which associator must be called to perform a particular F-move. Such an F-move would look like
 
 ```@raw html
-<img src="../img/Fmove_coloring.svg" alt="" width="100%"/>
+<img src="../img/Fmove_coloring.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 ### Why opposite module categories end up being necessary in MultiTensorKit
@@ -136,7 +136,7 @@ In principle, choosing to bend e.g. codomain legs to the right and domain legs t
 
 For this reason, at the level of the fusion trees the topological move that is performed to bend the legs along the right is called a **B-move**. Graphically, one can show that this bend boils down to a particular F-move. The typical equation found in the literature is the following:
 ```@raw html
-<img src="../img/Bmove_lit.svg" alt="" width="100%"/>
+<img src="../img/Bmove_lit.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 ... The reason to only consider B-moves is rooted in the choice of canonical form of fusion trees within TensorKit, where fusions are iterated over from left to right and splittings from right to left. 
@@ -148,7 +148,7 @@ $$\mathcal{M}^* \simeq \mathcal{M}^\text{op}.$$
 In the multifusion setting, this can also be seen graphically. By keeping track of the colorings and the directions of the arrows of the legs, one can see that we need to slightly modify the expression for the B-move to the following:
 
 ```@raw html
-<img src="../img/Bmove_MF.svg" alt="" width="100%"/>
+<img src="../img/Bmove_MF.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 where by $\mathbb{1}_j$ we mean the unit of $\mathcal{C}_j$. 
@@ -162,7 +162,7 @@ In a similar manner, the N-symbols contain maximally three colors, so these data
 Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{c \bar{c} c}_{c}$ needs to be evaluated for these topological data. Graphically, we find that
 
 ```@raw html
-<img src="../img/qdim_fs_MF.svg" alt="" width="50%" class="center"/>
+<img src="../img/qdim_fs_MF.svg" alt="" width="50%" class="center color-invertible"/>
 ``` 
 
 An important property of the F-symbols is that they must satisfy the **triangle identities**. In fusion category theory, this states that isomorphisms between (simple) objects $a$ and the tensor product between $a$ and the unit $\mathbb{1}$ exists, and that 
@@ -174,7 +174,7 @@ for $b$ in the same fusion category. This can be straightforwardly generalised t
 Besides the triangle identities, the (multi)fusion category must also fulfill the **pentagon equations**. These encapsulate the two identical manners to evaluating the fusion of four objects in the (multi)fusion category. Every fusion category's F-symbols must satisfy these individually, but also the (bi)module associators between bimodule and fusion categories. One can check that, for every pair of fusion categories, their bimodule category and opposite bimodule category, there are 32 pentagon equations to be satisfied. In the multifusion notation, they can be represented by
 
 ```@raw html
-<img src="../img/pentagon_colored.svg" alt="" width="100%"/>
+<img src="../img/pentagon_colored.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
 We briefly mentioned earlier how unitary F-symbols are required within TensorKit, and thus necessarily MultiTensorKit. 
@@ -189,9 +189,9 @@ $$\mathcal{C} = \begin{pmatrix} \mathcal{C}_1 & \mathcal{M} \\ \mathcal{M}^{\tex
 
 We already identified the off-diagonal elements with module categories over the fusion categories on the diagonal. Accordingly, $\mathcal{M}$ is a $(\mathcal{C}_1, \mathcal{C}_2)$-bimodule category, and $\mathcal{M}^{\text{op}}$ is the opposite module category and a $(\mathcal{C}_2, \mathcal{C}_1)$-bimodule category. 
 
-If we take $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep} \mathbb{Z}_2$ and $\mathcal{M} = \mathsf{Vec}$, then the entire multifusion category is isomorphic to the $\mathsf{Ising}$ category [etingof2016tensor; Example 4.10.5](@cite). We identify the trivial representation of $\mathsf{Rep} \mathbb{Z}_2$ with the unit of $\mathsf{Ising}$, the sign representation with $\psi$ and the unique object of $\mathsf{Vec}$ with the duality object $\sigma$. One can easily check that the fusion rules of $\mathsf{Ising}$ match with those we expect within $\mathsf{Rep} \mathbb{Z}_2$ and with its module category $\mathsf{Vec}$. Additionally, the fusion between $\mathsf{Vec}$ and $\mathsf{Vec}^\text{op}$ (and vice-versa) giving every object in $\mathcal{C}_1$ ($\mathcal{C}_2$) is consistent with $\sigma \times \sigma^* = 1 + \psi$. This particular example can be found in [TensorKitSectors](https://github.com/QuantumKitHub/TensorKitSectors.jl).
+If we take $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep}(\mathbb{Z}_2)$ and $\mathcal{M} = \mathsf{Vec}$, then the entire multifusion category is isomorphic to the $\mathsf{Ising}$ category [etingof2016tensor; Example 4.10.5](@cite). We identify the trivial representation of $\mathsf{Rep}(\mathbb{Z}_2)$ with the unit of $\mathsf{Ising}$, the sign representation with $\psi$ and the unique object of $\mathsf{Vec}$ with the duality object $\sigma$. One can easily check that the fusion rules of $\mathsf{Ising}$ match with those we expect within $\mathsf{Rep}(\mathbb{Z}_2)$ and with its module category $\mathsf{Vec}$. Additionally, the fusion between $\mathsf{Vec}$ and $\mathsf{Vec}^\text{op}$ (and vice-versa) giving every object in $\mathcal{C}_1$ ($\mathcal{C}_2$) is consistent with $\sigma \times \sigma^* = 1 + \psi$. This particular example can be found in [TensorKitSectors](https://github.com/QuantumKitHub/TensorKitSectors.jl).
 
-This construction can be generalised to $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep_G}$ with $\mathsf{G}$ a finite abelian group, such that the entire multifusion category is isomorphic to the Tambara-Yamagami category $\mathsf{TY}(\mathsf{G})$ (with positive Frobenius-Schur indicator for our purposes), and $\mathsf{Vec}$ will represent the duality object which squares to all invertible objects of the original group. To be exact, one of the diagonal fusion categories should be $\mathsf{Vec_G}$ for the correct Morita dual relation, but it is known for abelian groups that this is isomorphic to $\mathsf{Rep_G}$.
+This construction can be generalised to $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep(G)}$ with $\mathsf{G}$ a finite abelian group, such that the entire multifusion category is isomorphic to the Tambara-Yamagami category $\mathsf{TY}(\mathsf{G})$ (with positive Frobenius-Schur indicator for our purposes), and $\mathsf{Vec}$ will represent the duality object which squares to all invertible objects of the original group. To be exact, one of the diagonal fusion categories should be $\mathsf{Vec_G}$ for the correct Morita dual relation, but it is known for abelian groups that this is isomorphic to $\mathsf{Rep(G)}$.
 
 ## Module and multifusion categories in condensed matter physics
 - boundaries of string-net models
