@@ -13,7 +13,7 @@ tensor network simulations of quantum many-body systems with aid of [MPSKit.jl](
 ## Table of contents
 
 ```@contents
-Pages = ["man/fusioncats.md", "man/multifusioncats.md","lib/library.md", "references.md"]
+Pages = ["man/fusioncats.md","man/multifusioncats.md","lib/library.md", "references.md"]
 Depth = 2
 ```
 
@@ -30,5 +30,5 @@ As the name suggests, MultiTensorKit is an extension of [TensorKit.jl](https://g
 [TensorKitSectors.jl](https://github.com/QuantumKitHub/TensorKitSectors.jl). Therefore, we recommend including TensorKit 
 to your project. Additionally, MultiTensorKit was made to be functional with [MPSKit.jl](https://github.com/QuantumKitHub/MPSKit.jl)
 and [MPSKitModels.jl](https://github.com/QuantumKitHub/MPSKitModels.jl) for Matrix Product State (MPS) calculations, supporting symmetries
-which go beyond TensorKit.
+which go beyond TensorKit. All these packages are registered in JuliaRegistries and can be added through the package manager.
 
