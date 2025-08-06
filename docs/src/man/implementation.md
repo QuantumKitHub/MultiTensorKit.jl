@@ -1,6 +1,6 @@
 explain the f-symbol and n-symbol storage system
 
-# MultiTensorKit implementation: $\mathsf{Rep(A_4)}$ as an example
+# MultiTensorKit implementation: $\mathsf{Rep(A_4)}$ as a guiding example
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations. In particular, we will be making a generalised anyonic spin chain. We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite). The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
 
 This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep(A_4)}$. Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category. There are 3 fusion categories up to equivalence:
@@ -10,7 +10,7 @@ This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is th
 
 For this example, we will require the following packages:
 ````julia
-using TensorKit, MultiTensorKit, MPSKit, MPSKitModels
+using TensorKit, MultiTensorKit, MPSKit, MPSKitModels, Plots
 ````
 
 ## Identifying the simple objects
@@ -113,10 +113,10 @@ init_mps = FiniteMPS(L, P, V; left=Vb, right=Vb)
 ## DMRG2 and the entanglement spectrum
 We can now look to find the ground state of the Hamiltonian with two-site DMRG. We use this instead of the "usual" one-site DMRG because the two-site one will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations. 
 ````julia
-dmrg2alg = DMRG2(;verbosity=2, tol=1e-8, trscheme=truncbelow(1e-4))
+dmrg2alg = DMRG2(;verbosity=2, tol=1e-7, trscheme=truncbelow(1e-4))
 ψ, _ = find_groundstate(init_mps, H, dmrg2alg)
 ````
-The truncation scheme keyword argument is mandatory when calling `DMRG2` in MPSKit. Here, we choose to truncate such that all singular values are larger than $10^{-4}$, while setting the default tolerance for convergence to $10^{-8}$. More information on this can be found in the [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl) documentation.
+The truncation scheme keyword argument is mandatory when calling `DMRG2` in MPSKit. Here, we choose to truncate such that all singular values are larger than $10^{-4}$, while setting the default tolerance for convergence to $10^{-7}$. More information on this can be found in the [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl) documentation. To run one-site DMRG anyway, use `DMRG` which does not require a truncation scheme.
 
 Now that we've found the ground state, we can compute the entanglement spectrum in the middle of the chain.
 ````julia
@@ -124,10 +124,9 @@ spec = entanglement_spectrum(ψ, round(Int, L/2))
 ````
 This returns a dictionary which maps the objects grading the virtual space to the singular values. In this case, there is one key corresponding to $\mathsf{Vec}$. We can also immediately return a plot of this data by the following:
 ````julia
-using Plots # !
 entanglementplot(ψ;site=round(Int, L/2))
 ````
-This plot will show the singular values per object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system. #TODO: actually include the plot (or run everything as ipynb)
+This plot will show the singular values per object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system. #TODO: actually include the plot 
 
 ## Search for the correct dual model
 
@@ -139,38 +138,21 @@ V = Vect[A4Object](A4Object(i, 6, label) => D for label in 1:module_numlabels(i)
 Vb = Vect[A4Object](c => 1 for c in first(sectors(V))) # not all charges on boundary, play around with what is there
 ````
 
+#TODO: show all the plots
 
+!!! note "Additional functions and keyword arguments"
+    Certain commonly used functions within MPSKit require extra keyword arguments to be compatible with multifusion MPS simulations. In particular, the keyword argument `sector` (note the lowercase "s") appears in 
+    - `transfer_spectrum`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix. Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the sectors lie in the symmetry category $\mathcal{C} = \mathcal{D^*_M}$.
+    - `correlation_length`: since this function calls `transfer_spectrum`, the same logic applies.
+    - `excitations` with `QuasiparticleAnsatz`: similar to the previous functions, charged excitations are selected by adding a charged auxiliary space to the eigenvectors representing the quasiparticle states. 
+    - `exact_diagonalization`: the `sector` keyword argument now requires an object in $\mathcal{D}$, since this is the fusion category which specifies the bond algebra from which the Hamiltonian is constructed. This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases.
 
-
-
-### Infinite case
-Now, using MPKSit, we can perform matrix product state calculations. We construct some nearest-neighbour Hamiltonian and find the MPS representation of the ground state.
+## Differences with the infinite case
+We can repeat the above calcalations also for an infinite system. The `lattice` variable will change, as well as the MPS constructor and the algorithm:
 ````julia
-h = ones(ComplexF64, P ⊗ P ← P ⊗ P)
-H = @mpoham -sum(h{i,j} for (i,j) in nearest_neighbours(InfiniteChain(1)))
+lattice = InfiniteChain(1)
 init = InfiniteMPS([P], [V])
-
-gs, envs = find_groundstate(init, H, VUMPS())
+inf_alg = VUMPS(; verbosity=2, tol=1e-7)
 ````
 
-Besides `VUMPS`, `IDMRG` and `IDMRG2` are as easy to run with the `A4Object` `Sector`.
-
-A couple of MPSKit functions require an additional keyword argument `sector` (note the lowercase "s") specifying which sector to target within the function. These are:
-- `transfer_spectrum`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix. Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D}$), the sectors lie in the symmetry category $\mathcal{C}$.
-- `correlation_length`: since this function calls `transfer_spectrum`, the same logic applies.
-- `excitations` with `QuasiparticleAnsatz`: similar to the previous functions, charged excitations are selected by adding a charged auxiliary space to the eigenvectors representing the quasiparticle states. 
-
-### Finite case
-There are minor differences to pay attention to when simulating matrix product states with a finite length. The first noticeable difference is in the `FiniteMPS` constructor itself to build an initial state. We must pass on a left and right virtual space to the keyword arguments `left` and `right`, since these would by default try to place a trivial space of the `Sector`, which does not exist for `BimoduleSector` due to the semisimple unit. Performing parallel calculations to the previous section now looks like
-
-````julia
-L = 10 # length of the MPS
-init = FiniteMPS(L, P, V; left=V, right=V) # put Vec on the boundaries as well
-H = @mpoham sum(h{i,j} for (i,j) in nearest_neighbours(FiniteChain(L)))
-
-gs, envs = find_groundstate(init, H, DMRG())
-````
-
-`DMRG2` will run in a similar manner. Additional `sector` keywords are present for the following:
-- `exact_diagonalization`: the `sector` keyword argument now requires an object in $\mathcal{D}$, since this is the fusion category which specifies the bond algebra from which the Hamiltonian is constructed. This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases.
-- `excitations` with `QuasiparticleAnsatz`: see infinite case.
+Besides `VUMPS`, `IDMRG` and `IDMRG2` are as easy to run with the `A4Object` `Sector`. It is also clear that boundary terms do not play a role in this case.
