@@ -1,5 +1,3 @@
-explain the f-symbol and n-symbol storage system
-
 # MultiTensorKit implementation: $\mathsf{Rep(A_4)}$ as a guiding example
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations. In particular, we will be making a generalised anyonic spin chain. We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite). The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
 
@@ -47,7 +45,7 @@ Identifying the other simple objects of a (not necessarily fusion) category requ
 
 The dual object of some simple object $a$ of an arbitrary subcategory $\mathcal{C}_{ij}$ is defined as the unique object $a^* \in \mathcal{C}_{ji}$ satisfying
 
-$$^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* \times a,$$
+$$^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* \times a$$
 
 with multiplicity 1.
 ## Constructing the Hamiltonian and matrix product state

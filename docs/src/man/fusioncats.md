@@ -7,7 +7,7 @@ Afterwards, the extension to multifusion categories is explained, and its relati
 
 # Fusion category theory
 
-The aim of this section is to explain the bare minimum required to proceed to the next section on multifusion category theory and bimodule categories. More details can be found in the [TensorKit documentation](https://jutho.github.io/TensorKit.jl/stable/man/categories/) or the book Tensor Categories [etingof2016tensor](@cite).
+The aim of this section is to explain the bare minimum required to proceed to the next section on multifusion category theory and bimodule categories. More details can be found in the [TensorKit](https://jutho.github.io/TensorKit.jl/stable/man/categories/) documentation or the book Tensor Categories [etingof2016tensor](@cite).
 
 Let us start simple and introduce the **fusion ring** $\mathcal{C}$ in a black-box manner. This ring 
 *   consists of finitely many simple objects $\{ X_1, X_2, ..., X_R \}$, with $R$ the rank of the fusion ring,

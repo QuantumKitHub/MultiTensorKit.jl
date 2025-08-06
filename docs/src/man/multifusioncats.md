@@ -155,21 +155,11 @@ where by $\mathbb{1}_j$ we mean the unit of $\mathcal{C}_j$.
 
 ### More on the topological data: gauge choices and distilling properties of the subcategories
 
-The most generic F-move contains 4 colors. For that reason, MultiTensorKit will require the F-symbol data to provided as some data file (currently .txt) with 4 + 6 + 4 + 2 = 16 columns. The first 4 refer to the colors, the following 6 label the simple objects of the corresponding subcategories, the next 4 label multiplicities, and the final 2 provide the real and imaginary value of the F-symbol itself.
-
-In a similar manner, the N-symbols contain maximally three colors, so these data must provide 3 columns labeling the colors, 3 columns labeling the simple objects and a final column with the dimension of the corresponding vector space.
-
-Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{c \bar{c} c}_{c}$ needs to be evaluated for these topological data. Graphically, we find that
-
-```@raw html
-<img src="../img/qdim_fs_MF.svg" alt="" width="50%" class="center color-invertible"/>
-``` 
-
 An important property of the F-symbols is that they must satisfy the **triangle identities**. In fusion category theory, this states that isomorphisms between (simple) objects $a$ and the tensor product between $a$ and the unit $\mathbb{1}$ exists, and that 
 
 $$(a \otimes \mathbb{1}) \otimes b \cong a \otimes (\mathbb{1} \otimes b)$$
 
-for $b$ in the same fusion category. This can be straightforwardly generalised to multifusion categories. This requires a particular gauging of these trivalent vertices.
+for $b$ in the same fusion category. This can be straightforwardly generalised to multifusion categories. This requires a particular partial gauging of these trivalent vertices.
 
 Besides the triangle identities, the (multi)fusion category must also fulfill the **pentagon equations**. These encapsulate the two identical manners to evaluating the fusion of four objects in the (multi)fusion category. Every fusion category's F-symbols must satisfy these individually, but also the (bi)module associators between bimodule and fusion categories. One can check that, for every pair of fusion categories, their bimodule category and opposite bimodule category, there are 32 pentagon equations to be satisfied. In the multifusion notation, they can be represented by
 
@@ -177,7 +167,18 @@ Besides the triangle identities, the (multi)fusion category must also fulfill th
 <img src="../img/pentagon_colored.svg" alt="" width="100%" class="color-invertible"/>
 ``` 
 
-We briefly mentioned earlier how unitary F-symbols are required within TensorKit, and thus necessarily MultiTensorKit. 
+The most generic F-move contains 4 colors. For that reason, MultiTensorKit requires the F-symbol data to be provided as some data file (currently .txt) with 4 + 6 + 4 + 2 = 16 columns. The first 4 refer to the colors, the following 6 label the simple objects of the corresponding subcategories, the next 4 label multiplicities, and the final 2 provide the real and imaginary value of the F-symbol itself.
+
+In a similar manner, the N-symbols contain maximally three colors, so these data must provide 3 columns labeling the colors, 3 columns labeling the simple objects and a final column with the dimension of the corresponding vector space.
+
+Besides the B-move (and closely related A-move, which we do not illustrate), we can also see how the quantum dimension and Frobenius-Schur indicator expressions get modified. We already know that an F-move of the form $F^{c \bar{c} c}_{c}$ needs to be evaluated for these topological data, which is in fact another gauge fixing. Graphically, we find
+
+```@raw html
+<img src="../img/qdim_fs_MF.svg" alt="" width="25%" class="center color-invertible"/>
+``` 
+In principle, a gauge fixing can be done to set the Frobenius-Schur indicator to $\pm 1$. However, this assumption is no longer required within TensorKit and can be relaxed to just be a phase.
+
+The above gauge fixing is a property of the unitary gauge. By choosing appropriate bases, one can transform the F-symbols of a (multi)fusion category to be unitary matrices. More details on the importance of unitary data can be found in the [TensorKit](https://jutho.github.io/TensorKit.jl/stable/man/categories/#ss_topologicalfusion) documentation.
 
 ### Braiding
 A very important aspect of MultiTensorKit is that all `BimoduleSector`s are defined to *not* support braiding: `TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()`. We do this for two reasons. On the one hand, there is no natural 1-categorical way of defining braidings between the components of the multifusion category. It is possible that the diagonal fusion categories themselves are braided, but a "componentwise" braiding is unwise to support. On the other hand, it is entirely possible to write matrix product state manipulations in a planar manner (which has been done in [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl)), thus avoiding the need of a braiding tensor. 
