@@ -17,9 +17,9 @@ mathengine = MathJax3(Dict(:loader => Dict("load" => ["[tex]/physics"]),
                                                        "mathtools"])))
 
 makedocs(; sitename="MultiTensorKit.jl", modules=[MultiTensorKit],
-         #  assets=["assets/custom.css"],
          authors="Boris De Vos, Laurens Lootens and Lukas Devos",
          pages=pages, pagesonly=true, plugins=[bib],
-         format=Documenter.HTML(; mathengine=mathengine))
+         format=Documenter.HTML(; prettyurls=true, mathengine=mathengine, 
+         assets=["assets/custom.css"]))
 
-deploydocs(; repo="https://github.com/QuantumKitHub/MultiTensorKit.jl")
+deploydocs(; repo="https://github.com/QuantumKitHub/MultiTensorKit.jl", push_preview = true)
