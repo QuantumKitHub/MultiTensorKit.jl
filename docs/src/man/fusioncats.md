@@ -26,35 +26,34 @@ This way, we can describe fusion categories by a triple $(\otimes, 1_\mathcal{C}
 
 Vectors in these hom-spaces are graphically denoted as living in the trivalent junction
 ```@raw html
-<img src="../img/homvector.svg" alt="" width="50%" class="center color-invertible"/>
+<img src="../img/homvector.svg" alt="" width="30%" class="center color-invertible"/>
 ``` 
 
 
 With the F-symbol, we can perform F-moves:
 
 ```@raw html
-<img src="../img/Fmove.svg" alt="" width="100%" class="color-invertible"/>
+<img src="../img/Fmove.svg" alt="" width="80%" class="color-invertible"/>
 ``` 
 
 TensorKit requires the F-symbols to be unitary. This way, we can interpret the F-symbol $F^{ijk}_l$ as a unitary matrix, and the F-move as a unitary basis transformation. Unitarity is also useful from a diagrammatic point of view because the category is then equipped with a pivotal and spherical structure. This essentially means that morphisms can be drawn and moved around freely on a 2-sphere, such that vector spaces can be moved freely from domain (codomain) to codomain (domain). 
 
 ## Examples
 
-### $\mathsf{VecG}$ and $\mathsf{RepG}$
+### $\mathsf{Vec_G}$ and $\mathsf{Rep(G)}$
 Colloquially speaking, category theory attempts to generalise mathematical structures and their relations in a way that different structures can be treated in an equal manner. This is noted in particular as fusion category theory encompasses not only finite and compact groups, but also their representations. We show a table sketching how these are put on equal footing categorically.
 
-|$\mathsf{VecG}$|$\mathsf{RepG}$|Categorical generalisation|
+|$\mathsf{Vec_G}$|$\mathsf{Rep(G)}$|Categorical generalisation|
 |:---:|:---:|:---:|
 |$G$-graded vector spaces $V_1, V_2, ...$|Representations of $G$ $(V_1, \pi_1), (V_2, \pi_2), ...$|Objects|
 |$G$-graded preserving linear maps $\phi: V \rightarrow W$|Intertwiners $f: V_1 \rightarrow V_2$, $f \circ \pi_1 = \pi_2 \circ f$|Morphisms $\text{Hom}_\mathcal{C}$|
-1d subspaces $\mathbb{C}_{g_1}, \mathbb{C}_{g_2}$:  $\text{Hom}_{\mathsf{VecG}}(\mathbb{C}_{g_1},\mathbb{C}_{g_2}) = \delta_{g_1g_2}$|Irreps: $\text{Hom}_{\mathsf{RepG}}(\rho_i,\rho_j) = \delta_{ij} \mathbb{C}$ (Schur)|Simple objects: $\text{Hom}_{\mathcal{C}}(a,b) = \delta_{ab}\mathbb{C}$|
+1d subspaces $\mathbb{C}_{g_1}, \mathbb{C}_{g_2}$:  $\text{Hom}_{\mathsf{Vec_G}}(\mathbb{C}_{g_1},\mathbb{C}_{g_2}) = \delta_{g_1g_2}$|Irreps: $\text{Hom}_{\mathsf{Rep(G)}}(\rho_i,\rho_j) = \delta_{ij} \mathbb{C}$ (Schur)|Simple objects: $\text{Hom}_{\mathcal{C}}(a,b) = \delta_{ab}\mathbb{C}$|
 $G$-graded tensor product $(V \otimes W)_g = \oplus_{hk=g} V_h \otimes W_k$| $\pi_i \otimes \pi_j \simeq \oplus_i N_{ij}^k\rho_k$ | Direct sum, monoidal product, fusion rules, multiplicity|
 $\mathbb{C}_1 \otimes W \simeq W \simeq W \otimes \mathbb{C}_1$ | Trivial rep 1: $1 \otimes \rho = \rho = \rho \otimes 1$ | Monoidal unit $1_\mathcal{C}$
 $\mathbb{C}_g \otimes \mathbb{C}_{g^{-1}} = \mathbb{C}_1 = \mathbb{C}_{g^{-1}} \otimes \mathbb{C}_g$ | $\pi \otimes \overline{\pi} = 1 \oplus ...$ | Dual object
 $F:(V \otimes W) \otimes U \xrightarrow{\sim}V \otimes (W \otimes U)$|$F: (\pi_1 \otimes \pi_2) \otimes \pi_3 \xrightarrow{\sim} \pi_1 \otimes (\pi_2 \otimes \pi_3)$|F-symbol|
 
-## Fusion categories in condensed matter physics
-- String-net models -> non-chiral topological order classification
-- Kitaev's appendix E -> anyonic excitations
-- Golden chain, anyonic spin chains
-- 
+### $\mathsf{Fib}$ and $\mathsf{Ising}$
+Arguably the simplest fusion category besides the familiar groups or representations of groups is the Fibonacci fusion category. This contain 2 simple objects $1$ and $\tau$, with non-trivial fusion rule $\tau \otimes \tau = 1 \oplus \tau$. This fusion category is in fact **braided** as well, and actually **modular**.
+
+Another simple fusion category is the Ising category, commonly denoted $\mathsf{Ising}$. 3 simple objects form this category, namely $\{1, \psi, \sigma\}$, where $1$ and $\psi$ behave like the trivial charged representations of $\mathbb{Z}_2$, while $\sigma$ is the $\mathbb{Z}_2$ extension of this. The fusion rules reflect these: $1 \otimes \psi = \psi = \psi \otimes 1, \sigma \otimes X = \sigma = X \otimes \sigma$ for $X = 1, \psi$, and $\sigma \otimes \sigma = 1 \oplus \psi$. This fusion category is also **modular**. Both these modular fusion categories are already implemented in TensorKit.
