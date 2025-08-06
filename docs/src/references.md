@@ -1,4 +1,4 @@
-# References used in documentation
+# References
 
 ```@bibliography
 ```
