@@ -1,12 +1,12 @@
 explain the f-symbol and n-symbol storage system
 
-# MultiTensorKit implementation: $\mathsf{Rep_{A_4}}$ as an example
+# MultiTensorKit implementation: $\mathsf{Rep(A_4)}$ as an example
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations. In particular, we will be making a generalised anyonic spin chain. We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite). The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
 
 This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep_{A_4}}$. Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category. There are 3 fusion categories up to equivalence:
-- $\mathsf{Vec A_4}$: the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$. It has thus 12 objects.
-- $\mathsf{Rep_{A_4}}$: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4. One is the trivial representation, two are one-dimension non-trivial and the last is three-dimensional.
-- $\mathsf{Rep H}$: the representation category of some Hopf algebra which does not have a name. It has 6 simple objects.
+- $\mathsf{Vec_{A_4}}$, the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$. It has thus 12 objects.
+- $\mathsf{Rep(A_4)}$: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4. One is the trivial representation, two are one-dimensional non-trivial and the last is three-dimensional.
+- $\mathsf{Rep(H)}$: the representation category of some Hopf algebra which does not have a name. It has 6 simple objects.
 
 ````julia
 using TensorKit, MultiTensorKit, MPSKit, MPSKitModels
@@ -48,7 +48,7 @@ The dual object of some simple object $a$ of an arbitrary subcategory $\mathcal{
 $$ ^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* \times a,$$
 
 with multiplicity 1.
-## Hamiltonian
+## Constructing the Hamiltonian and matrix product state
 TensorKit has been made compatible with the multifusion structure by keeping track of the relevant units in the fusion tree manipulations. With this, we can make `GradedSpace`s whose objects are in `A4Object`: 
 
 ````julia
@@ -56,9 +56,8 @@ D1 = A4Object(6, 6, 1) # unit in this case
 D2 = A4Object(6, 6, 2) # non-trivial 1d irrep
 D3 = A4Object(6, 6, 3) # non-trivial 1d irrep
 D4 = A4Object(6, 6, 4) # 3d irrep
-
 ````
-Since we want to replicate a spin-1 Heisenberg model, it makes sense to use the 3-dimensional irrep to grade the physical space, and thus construct our Hamiltonian. We don't illustrate here how to derive the considered Hamiltonian in a $\mathsf{Rep(A_4)}$ basis, but simply give it.
+Since we want to replicate a spin-1 Heisenberg model, it makes sense to use the 3-dimensional irrep to grade the physical space, and thus construct our Hamiltonian. We don't illustrate here how to derive the considered Hamiltonian in a $\mathsf{Rep(A_4)}$ basis, but simply give it. For now, we construct a finite-size spin chain; below we will repeat the calculation for an infinite system.
 
 ````julia
 P = Vect[A4Object](D4 => 1) # physical space
@@ -84,8 +83,8 @@ block(h3_R, D4) .= [0 1;]
 @plansor h3[-1 -2; -3 -4] := h3_L[-1 1; -3] * h3_R[-2; 1 -4]
 
 L = 60
-J1 = 1.0 # probing the A4 SPT phase first
-J2 = 1.0
+J1 = -2.0 # probing the A4 SSB phase first
+J2 = -5.0
 lattice = FiniteChain(L)
 H1 = @mpoham sum(-2 * h1{i,j} for (i, j) in nearest_neighbours(lattice))
 H2 = @mpoham sum(h2{i,j} for (i, j) in nearest_neighbours(lattice))
@@ -94,14 +93,11 @@ H3 = @mpoham sum(2im * h3{i,j} for (i, j) in nearest_neighbours(lattice))
 H = H1 + J1 * H2 + J3 * H3
 ````
 
-
-## Constructing the matrix product state
-For now, we will select $\mathsf{Vec}$ as the module category:
+For the matrix product state, we will select $\mathsf{Vec}$ as the module category for now:
 ````julia
 M = A4Object(1, 6, 1) # Vec
 ````
-
- Afterwards, we build the physical and virtual space of the matrix product state:
+and construct the finite MPS:
 ````julia
 D = 40 # bond dimension
 V = Vect[A4Object](M => D)
@@ -109,7 +105,32 @@ Vb = Vect[A4Object](M => 1) # non-degenerate boundary virtual space
 init_mps = FiniteMPS(L, P, V; left=Vb, right=Vb)
 ````
 > [!IMPORTANT]
-> We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for `BimoduleSector` due to the semisimple unit. 
+> We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit. 
+
+## DMRG2 and the entanglement spectrum
+We can now look to find the ground state of the Hamiltonian with two-site DMRG. We use this instead of the "usual" one-site DMRG because the two-site one will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations. 
+````julia
+dmrg2alg = DMRG2(;verbosity=2, tol=1e-8, trscheme=truncbelow(1e-4))
+ψ, _ = find_groundstate(init_mps, H, dmrg2alg)
+````
+The truncation scheme keyword argument is mandatory when calling `DMRG2` in MPSKit. Here, we choose to truncate such that all singular values are larger than $10^{-4}$, while setting the default tolerance for convergence to $10^{-8}$. More information on this can be found in the [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl) documentation.
+
+Now that we've found the ground state, we can compute the entanglement spectrum in the middle of the chain.
+````julia
+spec = entanglement_spectrum(ψ, round(Int, L/2))
+````
+This returns a dictionary which maps the objects grading the virtual space to the singular values. In this case, there is one key corresponding to $\mathsf{Vec}$. We can also immediately return a plot of this data by the following:
+````julia
+using Plots # !
+entanglementplot(ψ;site=round(Int, L/2))
+````
+This plot will show the singular values per object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system. #TODO: actually include the plot (or run everything as ipynb)
+
+## Search for the correct dual model
+
+Consider a quantum lattice model with its symmetries determing the phase diagram. For every phase in the phase diagram, the dual model for which the ground state maximally breaks all symmetries spontaneously is the one where the entanglement is minimised and the tensor network is represented most efficiently [Lootens_2024](@cite). Let us confirm this result, starting with the $\mathsf{Rep(A_4)}$ spontaneous symmetry breaking phase.
+
+
 
 
 
