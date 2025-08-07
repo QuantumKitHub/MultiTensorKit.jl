@@ -83,7 +83,7 @@ block(h3_R, D4) .= [0 1;]
 @plansor h3[-1 -2; -3 -4] := h3_L[-1 1; -3] * h3_R[-2; 1 -4]
 
 L = 60
-J1 = -2.0 # probing the A4 SSB phase first
+J1 = -2.0 # probing the A4 symmetric phase first
 J2 = -5.0
 lattice = FiniteChain(L)
 H1 = @mpoham sum(-2 * h1{i,j} for (i, j) in nearest_neighbours(lattice))
