@@ -133,7 +133,7 @@ Consider a quantum lattice model with its symmetries determing the phase diagram
 ````julia
 module_numlabels(i) = MultiTensorKit._numlabels(A4Object, i, 6) 
 V = Vect[A4Object](A4Object(i, 6, label) => D for label in 1:module_numlabels(i))
-Vb = Vect[A4Object](c => 1 for c in first(sectors(V))) # not all charges on boundary, play around with what is there
+Vb = Vect[A4Object](first(sectors(V)) => 1) # not all charges on boundary, play around with what is there
 ````
 
 #TODO: show all the plots
