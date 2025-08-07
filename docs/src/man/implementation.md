@@ -124,7 +124,7 @@ This returns a dictionary which maps the objects grading the virtual space to th
 ````julia
 entanglementplot(ψ;site=round(Int, L/2))
 ````
-This plot will show the singular values per object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system. #TODO: actually include the plot 
+This plot will show the singular values per object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system. The next section will show this plot along with those when selecting the other module categories. 
 
 ## Search for the correct dual model
 
@@ -136,7 +136,13 @@ V = Vect[A4Object](A4Object(i, 6, label) => D for label in 1:module_numlabels(i)
 Vb = Vect[A4Object](first(sectors(V)) => 1) # not all charges on boundary, play around with what is there
 ````
 
-#TODO: show all the plots
+```@raw html
+<img src="../img/A4_sym_entanglement_spectrum.svg" alt="" width="90%"/>
+``` 
+
+The plot shows the entanglement spectra of the various dual models in the middle of the ground state for the original Hamiltonian probing the $\mathsf{Rep(A_4)}$-symmetric phase, along with the ground state without symmetries. Every subtitle also mentions the memory required to store the same middle ground state tensor. This plot should be compared to [Lootens_2024; Figure 2](@cite).
+
+This can be repeated with other parameter values for $J_1$ and $J_2$ in the Hamiltonian to probe the $\mathsf{Rep(\mathbb{Z}_2 \times \mathbb{Z}_2)}$-symmetric or $\mathsf{Rep^\psi(A_4)}$ SPT phase.
 
 !!! note "Additional functions and keyword arguments"
     Certain commonly used functions within MPSKit require extra keyword arguments to be compatible with multifusion MPS simulations. In particular, the keyword argument `sector` (note the lowercase "s") appears in 
