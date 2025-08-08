@@ -169,9 +169,184 @@ end
     end
 end
 
-println("-----------------------------")
-println("|    F-symbol data tests    |")
-println("-----------------------------")
+### start of TensorKit tests ###
+
+println("---------------------------------")
+println("|    Multifusion space tests    |")
+println("---------------------------------")
+
+i = 1
+j = 2
+
+V = (Vect[I]((i, i, label) => 1 for label in MTK._numlabels(I, i, i)),
+        Vect[I]((i, i, 1) => 1, (i, i, 2) => 2),
+        Vect[I]((i, i, 1) => 1, (i, i, 2) => 1),
+        Vect[I]((i, i, label) => 1 for label in MTK._numlabels(I, i, i)),
+        Vect[I]((i, i, 1) => 2, (i, i, 3) => 3))
+
+@timedtestset "Multifusion spaces " verbose = true begin
+    @timedtestset "GradedSpace: $(TK.type_repr(Vect[I]))" begin
+        gen = (values(I)[k] => (k + 1) for k in 1:length(values(I)))
+
+        V = GradedSpace(gen)
+        @test eval(Meta.parse(TK.type_repr(typeof(V)))) == typeof(V)
+        @test eval(Meta.parse(sprint(show, V))) == V
+        @test eval(Meta.parse(sprint(show, V'))) == V'
+        @test V' == GradedSpace(gen; dual=true)
+        @test V == @constinferred GradedSpace(gen...)
+        @test V' == @constinferred GradedSpace(gen...; dual=true)
+        @test V == @constinferred GradedSpace(tuple(gen...))
+        @test V' == @constinferred GradedSpace(tuple(gen...); dual=true)
+        @test V == @constinferred GradedSpace(Dict(gen))
+        @test V' == @constinferred GradedSpace(Dict(gen); dual=true)
+        @test V == @inferred Vect[I](gen)
+        @test V' == @constinferred Vect[I](gen; dual=true)
+        @test V == @constinferred Vect[I](gen...)
+        @test V' == @constinferred Vect[I](gen...; dual=true)
+        @test V == @constinferred Vect[I](Dict(gen))
+        @test V' == @constinferred Vect[I](Dict(gen); dual=true)
+        @test V == @constinferred typeof(V)(c => dim(V, c) for c in sectors(V))
+        @test @constinferred(hash(V)) == hash(deepcopy(V)) != hash(V')
+        @test V == GradedSpace(reverse(collect(gen))...)
+        @test eval(Meta.parse(sprint(show, V))) == V
+        @test eval(Meta.parse(sprint(show, typeof(V)))) == typeof(V)
+
+        @test isa(V, VectorSpace)
+        @test isa(V, ElementarySpace)
+        @test isa(InnerProductStyle(V), HasInnerProduct)
+        @test isa(InnerProductStyle(V), EuclideanInnerProduct)
+        @test isa(V, GradedSpace)
+        @test isa(V, GradedSpace{I})
+        @test @constinferred(dual(V)) == @constinferred(conj(V)) ==
+              @constinferred(adjoint(V)) != V
+        @test @constinferred(field(V)) == ℂ
+        @test @constinferred(sectortype(V)) == I
+        slist = @constinferred sectors(V)
+        @test @constinferred(hassector(V, first(slist)))
+        @test @constinferred(dim(V)) == sum(dim(s) * dim(V, s) for s in slist)
+        @test @constinferred(reduceddim(V)) == sum(dim(V, s) for s in slist)
+        @constinferred dim(V, first(slist))
+
+        @test @constinferred(⊕(V, zero(V))) == V
+        @test @constinferred(⊕(V, V)) == Vect[I](c => 2dim(V, c) for c in sectors(V))
+        @test @constinferred(⊕(V, V, V, V)) == Vect[I](c => 4dim(V, c) for c in sectors(V))
+
+        @testset "$Istr ($i, $j) spaces" for i in 1:r, j in 1:r
+            # space with a single sector
+            Wleft = @constinferred Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i))
+            Wright = @constinferred Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j))
+            WM = @constinferred Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j))
+            WMop = @constinferred Vect[I]((j, i, label) => 1 for label in 1:MTK._numlabels(I, j, i))
+
+            @test @constinferred(oneunit(Wleft)) == leftoneunit(Wleft) == rightoneunit(Wleft)
+            @test @constinferred(oneunit(Wright)) == leftoneunit(Wright) == rightoneunit(Wright)
+            @test @constinferred(leftoneunit(⊕(Wleft, WM))) == oneunit(Wleft)
+            @test @constinferred(leftoneunit(⊕(Wright, WMop))) == oneunit(Wright)
+            @test @constinferred(rightoneunit(⊕(Wright, WM))) == oneunit(Wright)
+            @test @constinferred(rightoneunit(⊕(Wleft, WMop))) == oneunit(Wleft)
+
+            @test_throws ArgumentError oneunit(I)
+
+            if i != j # some tests specialised for modules
+                @test_throws ArgumentError oneunit(WM)
+                @test_throws ArgumentError oneunit(WMop)
+
+                # sensible direct sums and fuses
+                ul, ur = one(I(i, i, 1)), one(I(j, j, 1))
+                @test @constinferred(⊕(Wleft, WM)) ==
+                    Vect[I](c => 1 for c in sectors(V) if leftone(c) == ul == rightone(c) || (c.i == i && c.j == j))
+                @test @constinferred(⊕(Wright, WMop)) ==
+                    Vect[I](c => 1 for c in sectors(V) if leftone(c) == ur == rightone(c) || (c.i == j && c.j == i))
+                @test @constinferred(⊕(Wright, WM)) ==
+                    Vect[I](c => 1 for c in sectors(V) if rightone(c) == ur == leftone(c) || (c.i == i && c.j == j))
+                @test @constinferred(⊕(Wleft, WMop)) ==
+                    Vect[I](c => 1 for c in sectors(V) if rightone(c) == ul == leftone(c) || (c.i == j && c.j == i))
+                @test @constinferred(fuse(Wleft, WM)) == Vect[I](c => dim(Wleft) for c in sectors(WM)) # this might be wrong
+                @test @constinferred(fuse(Wright, WMop)) == Vect[I](c => dim(Wright) for c in sectors(WMop)) # same
+
+                # less sensible fuse
+                @test @constinferred(fuse(Wleft, WMop)) == fuse(Wright, WM) ==
+                    Vect[I](c => 0 for c in sectors(V))
+
+                for W in [WM, WMop, Wright]
+                    @test infimum(Wleft, W) == Vect[I](c => 0 for c in sectors(V))
+                end
+            else
+                @test @constinferred(⊕(Wleft, Wright)) ==
+                    Vect[I](c => 2 for c in sectors(V) if c.i == c.j == i)
+                @test @constinferred(fuse(Wleft, WMop)) == fuse(Wright, WM)
+            end
+
+            for W in [Wleft, Wright]
+                @test @constinferred(⊕(W, oneunit(W))) ==
+                    Vect[I](c => isone(c) + dim(W, c) for c in sectors(W))
+                @test @constinferred(fuse(W, oneunit(W))) == W
+            end
+        end
+
+        d = Dict{I,Int}()
+        for a in sectors(V), b in sectors(V)
+            a.j == b.i || continue # skip if not compatible
+            for c in a ⊗ b
+                d[c] = get(d, c, 0) + dim(V, a) * dim(V, b) * Nsymbol(a, b, c)
+            end
+        end
+        @test @constinferred(fuse(V, V)) == GradedSpace(d)
+        @test @constinferred(flip(V)) ==
+              Vect[I](conj(c) => dim(V, c) for c in sectors(V))'
+        @test flip(V) ≅ V
+        @test flip(V) ≾ V
+        @test flip(V) ≿ V
+        @test @constinferred(⊕(V, V)) == @constinferred supremum(V, ⊕(V, V))
+        @test V == @constinferred infimum(V, ⊕(V, V))
+        @test V ≺ ⊕(V, V)
+        @test !(V ≻ ⊕(V, V))
+        randlen = rand(1:length(values(I)))
+        s = rand(collect(values(I))[randlen:end]) # such that dim(V, s) > randlen
+        @test infimum(V, GradedSpace(s => randlen)) ==
+              GradedSpace(s => randlen)
+        @test_throws SpaceMismatch (⊕(V, V'))
+    end
+
+    # CONTINUE HERE
+
+    @timedtestset "HomSpace with $(TK.type_repr(Vect[I])) " begin
+        for (V1, V2, V3, V4, V5) in (VIBC, VIBD, VIBM1, VIBM2, VIBMop1, VIBMop2)
+            W = HomSpace(V1 ⊗ V2, V3 ⊗ V4 ⊗ V5)
+            @test W == (V3 ⊗ V4 ⊗ V5 → V1 ⊗ V2)
+            @test W == (V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5)
+            @test W' == (V1 ⊗ V2 → V3 ⊗ V4 ⊗ V5)
+            @test eval(Meta.parse(sprint(show, W))) == W
+            @test eval(Meta.parse(sprint(show, typeof(W)))) == typeof(W)
+            @test spacetype(W) == typeof(V1)
+            @test sectortype(W) == sectortype(V1)
+            @test W[1] == V1
+            @test W[2] == V2
+            @test W[3] == V3'
+            @test W[4] == V4'
+            @test W[5] == V5'
+
+            @test @constinferred(hash(W)) == hash(deepcopy(W)) != hash(W')
+            @test W == deepcopy(W)
+            @test W == @constinferred permute(W, ((1, 2), (3, 4, 5)))
+            @test permute(W, ((2, 4, 5), (3, 1))) == (V2 ⊗ V4' ⊗ V5' ← V3 ⊗ V1')
+            @test (V1 ⊗ V2 ← V1 ⊗ V2) == @constinferred TK.compose(W, W')
+
+            @test_throws ErrorException insertleftunit(W)
+            @test insertrightunit(W) == (V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 ⊗ rightoneunit(V5))
+            @test_throws ErrorException insertrightunit(W, 6)
+            @test_throws ErrorException insertleftunit(W, 6)
+
+            @test (V1 ⊗ V2 ⊗ rightoneunit(V2) ← V3 ⊗ V4 ⊗ V5) ==
+                  @constinferred(insertrightunit(W, 2))
+            @test (V1 ⊗ V2 ← leftoneunit(V3) ⊗ V3 ⊗ V4 ⊗ V5) ==
+                  @constinferred(insertleftunit(W, 3))
+            @test @constinferred(removeunit(insertleftunit(W, 3), 3)) == W
+            @test_throws ErrorException @constinferred(insertrightunit(one(V1) ← V1, 0)) # should I specify it's the other error?
+            @test_throws ErrorException insertleftunit(one(V1) ← V1, 0)
+        end
+    end
+end
 
 @testset "$Istr ($i, $j) left and right units" for i in 1:r, j in 1:r
     Cij_obs = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
