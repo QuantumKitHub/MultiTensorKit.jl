@@ -146,9 +146,7 @@ This can be repeated with other parameter values for $J_1$ and $J_2$ in the Hami
 
 !!! note "Additional functions and keyword arguments"
     Certain commonly used functions within MPSKit require extra keyword arguments to be compatible with multifusion MPS simulations. In particular, the keyword argument `sector` (note the lowercase "s") appears in 
-    - `transfer_spectrum`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix. Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the sectors lie in the symmetry category $\mathcal{C} = \mathcal{D^*_M}$.
-    - `correlation_length`: since this function calls `transfer_spectrum`, the same logic applies.
-    - `excitations` with `QuasiparticleAnsatz`: similar to the previous functions, charged excitations are selected by adding a charged auxiliary space to the eigenvectors representing the quasiparticle states. 
+    - `excitations` with `QuasiparticleAnsatz`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix. Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the charged excitations lie in the symmetry category $\mathcal{C} = \mathcal{D^*_M}$.
     - `exact_diagonalization`: the `sector` keyword argument now requires an object in $\mathcal{D}$, since this is the fusion category which specifies the bond algebra from which the Hamiltonian is constructed. This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases.
 
 ## Differences with the infinite case
@@ -160,3 +158,9 @@ inf_alg = VUMPS(; verbosity=2, tol=1e-7)
 ````
 
 Besides `VUMPS`, `IDMRG` and `IDMRG2` are as easy to run with the `A4Object` `Sector`. It is also clear that boundary terms do not play a role in this case.
+
+!!! note "More functions for infinite systems"
+    When dealing with an infinite system, additional information can be retrieved from the matrix product state. These also require a keyword argument `sector` to be specified. These are
+    - `transfer_spectrum`: similar to `excitations`, the (partial) transfer matrix spectrum is selected by adding a charged auxiliary space to the transfer matrix eigenvectors. 
+    - `correlation_length`: since this function calls `transfer_spectrum`, the same logic applies.
+    - `excitations` in the infinite case also requires the keyword argument.
