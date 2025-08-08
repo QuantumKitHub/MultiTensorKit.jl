@@ -178,7 +178,7 @@ function extract_dual(::Type{A4Object})
 end
 
 function Base.one(a::BimoduleSector)
-    a.i == a.j || error("unit object for module categories is ill-defined")
+    a.i == a.j || throw(DomainError("unit of module category ($(a.i), $(a.j)) of $(typeof(a)) is ill-defined"))
     return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
