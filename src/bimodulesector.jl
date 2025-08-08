@@ -182,6 +182,10 @@ function Base.one(a::BimoduleSector)
     return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
+function Base.one(::Type{<:BimoduleSector})
+    throw(ArgumentError("one of Type BimoduleSector doesn't exist"))
+end
+
 function TensorKitSectors.leftone(a::BimoduleSector)
     return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
