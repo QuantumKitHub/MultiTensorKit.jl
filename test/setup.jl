@@ -2,6 +2,8 @@ using MultiTensorKit
 using TensorKitSectors, TensorKit
 using Test, TestExtras
 
+const MTK = MultiTensorKit
+
 function unitarity_test(as::Vector{I}, bs::Vector{I},
                         cs::Vector{I}) where {I<:BimoduleSector}
     @assert all(a.j == b.i for a in as, b in bs)

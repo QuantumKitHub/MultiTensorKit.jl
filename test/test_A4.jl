@@ -8,7 +8,7 @@ r = size(I)
 end
 
 @testset "$Istr Fusion Category $i" for i in 1:r
-    objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i, i])
+    objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
 
     @testset "Basic properties" begin
         s = rand(objects, 3)
@@ -27,15 +27,15 @@ for i in 1:r, j in 1:r
     @testset "Unitarity of $Istr F-move ($i, $j)" begin
         if i == j
             @testset "Unitarity of fusion F-move ($i, $j)" begin
-                fusion_objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i, i])
+                fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
                 @test unitarity_test(fusion_objects, fusion_objects, fusion_objects)
             end
         end
 
         i != j || continue # do this part only when off-diagonal
-        mod_objects = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
-        left_fusion_objects = I.(i, i, MultiTensorKit._get_dual_cache(I)[2][i, i])
-        right_fusion_objects = I.(j, j, MultiTensorKit._get_dual_cache(I)[2][j, j])
+        mod_objects = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
+        left_fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
+        right_fusion_objects = I.(j, j, MTK._get_dual_cache(I)[2][j, j])
 
         # C x C x M -> M or D x D x Mop -> Mop
         @testset "Unitarity of left module F-move ($i, $j)" begin
@@ -53,7 +53,7 @@ for i in 1:r, j in 1:r
         end
 
         @testset "Unitarity of mixed module F-move ($i, $j) and opposite ($j, $i)" begin
-            modop_objects = I.(j, i, MultiTensorKit._get_dual_cache(I)[2][j, i])
+            modop_objects = I.(j, i, MTK._get_dual_cache(I)[2][j, i])
 
             # C x M x Mop -> C or D x Mop x M -> D
             @test unitarity_test(left_fusion_objects, mod_objects, modop_objects)
@@ -93,7 +93,7 @@ end
 end
 
 @testset "$Istr ($i, $j) units and duals" for i in 1:r, j in 1:r
-    Cij_obs = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
+    Cij_obs = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
 
     s = rand(Cij_obs)
     @test eval(Meta.parse(sprint(show, s))) == s
@@ -101,12 +101,12 @@ end
     @test i == j ? isone(@constinferred(one(s))) :
           (isone(@constinferred(leftone(s))) && isone(@constinferred(rightone(s))))
     @constinferred dual(s)
-    @test dual(s) == I.(j, i, MultiTensorKit._get_dual_cache(I)[2][i, j][s.label])
+    @test dual(s) == I.(j, i, MTK._get_dual_cache(I)[2][i, j][s.label])
     @test dual(dual(s)) == s
 end
 
 @testset "$Istr ($i, $j) left and right units" for i in 1:r, j in 1:r
-    Cij_obs = I.(i, j, MultiTensorKit._get_dual_cache(I)[2][i, j])
+    Cij_obs = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
 
     s = rand(Cij_obs, 1)[1]
     sp = Vect[I](s => 1)
