@@ -302,9 +302,22 @@ function rounddim(c::I) where {I<:BimoduleSector}
     end
 end
 
-function dim(V::GradedSpace{<:BimoduleSector})
+function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
     T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
     return reduce(+, dim(V, c) * rounddim(c) for c in sectors(V); init=zero(T))
+end
+
+Base.zero(S::Type{<:GradedSpace{<:BimoduleSector}}) = S()
+
+function TensorKit.fuse(V₁::GradedSpace{I}, V₂::GradedSpace{I}) where {I<:BimoduleSector}
+    dims = SectorDict{I,Int}()
+    for a in sectors(V₁), b in sectors(V₂)
+        a.j == b.i || continue # skip if not compatible
+        for c in a ⊗ b
+            dims[c] = get(dims, c, 0) + Nsymbol(a, b, c) * dim(V₁, a) * dim(V₂, b)
+        end
+    end
+    return typeof(V₁)(dims)
 end
 
 # limited oneunit 
