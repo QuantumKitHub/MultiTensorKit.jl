@@ -24,7 +24,7 @@ We first need to select which fusion category we wish to use to grade the physic
   
 When referring to specific fusion and module categories, we will use this non-multifusion notation.
 
-The easiest way to identify which elements of the multifusion category correspond to the subcategories we wish to use is ... (not sure yet how to do this yet)
+The easiest way to identify which elements of the multifusion category correspond to the subcategories we wish to use is ... #TODO
 
 Now that we have identified the fusion and module categories, we want to select the relevant objects we wish to place in our graded spaces. Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label=1` corresponds to the unit object. Hence, the simplest way to find the unit object of a fusion subcategory is
 
