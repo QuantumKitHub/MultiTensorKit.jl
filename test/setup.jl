@@ -2,10 +2,11 @@ using MultiTensorKit
 using TensorKitSectors, TensorKit
 using Test, TestExtras
 
-function unitarity_test(as::Vector{I}, bs::Vector{I}, cs::Vector{I}) where {I<:BimoduleSector}
+function unitarity_test(as::Vector{I}, bs::Vector{I},
+                        cs::Vector{I}) where {I<:BimoduleSector}
     @assert all(a.j == b.i for a in as, b in bs)
     @assert all(b.j == c.i for b in bs, c in cs)
-    
+
     for a in as, b in bs, c in cs
         for d in ⊗(a, b, c)
             es = collect(intersect(⊗(a, b), map(dual, ⊗(c, dual(d)))))
@@ -26,4 +27,3 @@ function unitarity_test(as::Vector{I}, bs::Vector{I}, cs::Vector{I}) where {I<:B
     end
     return true
 end
-
