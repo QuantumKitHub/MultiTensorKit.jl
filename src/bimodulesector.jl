@@ -399,3 +399,19 @@ function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
     isempty(inds) && return zero(scalartype(t))
     return only(last(Bs[only(inds)]))
 end
+
+# is this even necessary? can let it error at TensorKit fusiontrees.jl:93 from the one(<:BimoduleSector) call
+# but these errors are maybe more informative
+function TensorKit.FusionTree(uncoupled::Tuple{<:I,Vararg{I}}) where {I<:BimoduleSector}
+    coupled = collect(⊗(uncoupled...))
+    if length(coupled) == 0 # illegal fusion somewhere
+        throw(ArgumentError("Forbidden fusion with uncoupled sectors $uncoupled"))
+    else # allowed fusions require inner lines
+        error("fusion tree requires inner lines if `FusionStyle(I) <: MultipleFusion`")
+    end
+end
+
+# this one might also be overkill, since `FusionTreeIterator`s don't check whether the fusion is allowed
+function fusiontrees(uncoupled::Tuple{I,Vararg{I}}) where {I<:BimoduleSector}
+    return throw(ArgumentError("coupled sector must be provided for $I fusion"))
+end
