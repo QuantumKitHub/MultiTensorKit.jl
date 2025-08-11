@@ -310,7 +310,7 @@ end
 Base.zero(S::Type{<:GradedSpace{<:BimoduleSector}}) = S()
 
 function TensorKit.fuse(V₁::GradedSpace{I}, V₂::GradedSpace{I}) where {I<:BimoduleSector}
-    dims = SectorDict{I,Int}()
+    dims = TensorKit.SectorDict{I,Int}()
     for a in sectors(V₁), b in sectors(V₂)
         a.j == b.i || continue # skip if not compatible
         for c in a ⊗ b
