@@ -830,7 +830,519 @@ V = Vect[I](values(I)[k] => 1 for k in 1:length(values(I)))
     end
 end
 
+@timedtestset "Tensors with symmetry involving $Istr ($i, $j)" verbose = true for i in 1:r, j in 1:r
+    VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+            Vect[I](one(I(i, i, 1)) => 2),
+            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
+            Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
+    )
+    VD = (Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)),
+            Vect[I](one(I(j, j, 1)) => 2),
+            Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
+            Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)),
+            Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 3)
+    )
 
+    VM1 = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+            Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)),
+            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
+            Vect[I](rand_object(I, i, j) => 4),
+            Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 3)
+    )
+
+    VM2 = (Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)),
+            Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)),
+            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
+            Vect[I](rand_object(I, i, j) => 4),
+            Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 3)
+    )
+
+    VMop1 = (Vect[I]((j, i, label) => 1 for label in 1:MTK._numlabels(I, j, i)),
+            Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+            Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
+            Vect[I](rand_object(I, j, i) => 4),
+            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
+    )
+
+    VMop2 = (Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)),
+            Vect[I]((j, i, label) => 1 for label in 1:MTK._numlabels(I, j, i)),
+            Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
+            Vect[I](rand_object(I, j, i) => 4),
+            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
+    )
+
+    Vcol = i != j ? (VC, VD, VM1, VM2, VMop1, VMop2) : (VC,) # avoid duplicate runs
+
+    for V in Vcol
+        V1, V2, V3, V4, V5 = V
+        @timedtestset "Basic tensor properties" begin
+            W = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5 # fusion matters
+            for T in (Int, Float32, Float64, ComplexF32, ComplexF64, BigFloat)
+                t = @constinferred zeros(T, W)
+                if isempty(t.data) # non-diagonal sector fuses poorly
+                    W = V3 ⊗ V4 ⊗ V5
+                    t = @constinferred zeros(T, W) # also empty because M isn't diagonal so can't fuse to empty space
+                end
+                @test @constinferred(hash(t)) == hash(deepcopy(t))
+                @test scalartype(t) == T
+                @test norm(t) == 0
+                @test codomain(t) == W
+                @test space(t) == (W ← one(W))
+                @test domain(t) == one(W)
+                @test typeof(t) == TensorMap{T,spacetype(t),length(W),0,Vector{T}}
+                # blocks
+                bs = @constinferred blocks(t)
+                if !isempty(bs)
+                    (c, b1), state = @constinferred Nothing iterate(bs) # errors if fusion gives empty data
+                    # @test c == first(blocksectors(W)) # unit doesn't have label 1
+                    next = @constinferred Nothing iterate(bs, state)
+                    b2 = @constinferred block(t, first(blocksectors(t)))
+                    @test b1 == b2
+                    @test eltype(bs) === Pair{typeof(c),typeof(b1)}
+                    @test typeof(b1) === TK.blocktype(t)
+                    @test typeof(c) === sectortype(t)
+                end
+            end
+        end
+        @timedtestset "Tensor Dict conversion" begin
+            W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # rewritten to be compatible with module fusion
+            for T in (Int, Float32, ComplexF64)
+                t = @constinferred rand(T, W)
+                d = convert(Dict, t)
+                @test t == convert(TensorMap, d)
+            end
+        end
+        # no tensor array conversion tests: no fusion tensor
+        @timedtestset "Basic linear algebra" begin
+            W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5
+            for T in (Float32, ComplexF64)
+                t = @constinferred rand(T, W) # fusion matters here
+                @test scalartype(t) == T
+                @test space(t) == W
+                @test space(t') == W'
+                @test dim(t) == dim(space(t))
+                @test codomain(t) == codomain(W)
+                @test domain(t) == domain(W)
+                # blocks for adjoint
+                bs = @constinferred blocks(t')
+                (c, b1), state = @constinferred Nothing iterate(bs)
+                @test c == first(blocksectors(W'))
+                next = @constinferred Nothing iterate(bs, state)
+                b2 = @constinferred block(t', first(blocksectors(t')))
+                @test b1 == b2
+                @test eltype(bs) === Pair{typeof(c),typeof(b1)}
+                @test typeof(b1) === TK.blocktype(t')
+                @test typeof(c) === sectortype(t)
+                # linear algebra
+                @test isa(@constinferred(norm(t)), real(T))
+                @test norm(t)^2 ≈ dot(t, t)
+                α = rand(T)
+                @test norm(α * t) ≈ abs(α) * norm(t)
+                @test norm(t + t, 2) ≈ 2 * norm(t, 2)
+                @test norm(t + t, 1) ≈ 2 * norm(t, 1)
+                @test norm(t + t, Inf) ≈ 2 * norm(t, Inf)
+                p = 3 * rand(Float64)
+                @test norm(t + t, p) ≈ 2 * norm(t, p)
+                @test norm(t) ≈ norm(t')
+
+                t2 = @constinferred rand!(similar(t))
+                β = rand(T)
+                @test @constinferred(dot(β * t2, α * t)) ≈ conj(β) * α * conj(dot(t, t2))
+                @test dot(t2, t) ≈ conj(dot(t, t2))
+                @test dot(t2, t) ≈ conj(dot(t2', t'))
+                @test dot(t2, t) ≈ dot(t', t2')
+
+                if all(a.i == a.j for a in blocksectors(W)) # can't reverse fusion for these
+                    i1 = @constinferred(isomorphism(T, V1 ⊗ V2, V2 ⊗ V1))
+                    i2 = @constinferred(isomorphism(Vector{T}, V2 ⊗ V1, V1 ⊗ V2))
+                    @test i1 * i2 == @constinferred(id(T, V1 ⊗ V2))
+                    @test i2 * i1 == @constinferred(id(Vector{T}, V2 ⊗ V1))
+                end
+                for v in (V1, V2, V3, V4, V5)
+                    wl = @constinferred(isometry(T, (leftoneunit(v) ⊕ leftoneunit(v)) ⊗ v, v))
+                    wr = @constinferred(isometry(T, v ⊗ (rightoneunit(v) ⊕ rightoneunit(v)), v))
+                    for w in (wl, wr)
+                        @test dim(w) == 2 * dim(v ← v)
+                        @test w' * w == id(Vector{T}, v)
+                        @test w * w' == (w * w')^2
+                    end
+                end
+            end
+        end
+        @timedtestset "Trivial space insertion and removal" begin
+            W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5
+            for T in (Float32, ComplexF64)
+                t = @constinferred rand(T, W) # fusion matters here
+                t2 = @constinferred insertleftunit(t, 5) # default errors
+
+                @test t2 == @constinferred insertrightunit(t, 4) # default doesn't error bc i==N then
+                @test numind(t2) == numind(t) + 1
+                @test space(t2) == insertleftunit(space(t), 5)
+                @test scalartype(t2) === T
+                @test t.data === t2.data
+                @test @constinferred(removeunit(t2, $(numind(t2) - 1))) == t # -1 required
+
+                t3 = @constinferred insertleftunit(t, 5; copy=true) # same here
+                @test t3 == @constinferred insertrightunit(t, 4; copy=true)
+                @test t.data !== t3.data
+                for (c, b) in blocks(t)
+                    @test b == block(t3, c)
+                end
+                @test @constinferred(removeunit(t3, $(numind(t3) - 1))) == t
+                t4 = @constinferred insertrightunit(t, 3; dual=true)
+                @test numin(t4) == numin(t) + 1 && numout(t4) == numout(t)
+                for (c, b) in blocks(t)
+                    @test b == block(t4, c)
+                end
+                @test @constinferred(removeunit(t4, 4)) == t
+                t5 = @constinferred insertleftunit(t, 4; dual=true)
+                @test numin(t5) == numin(t) + 1 && numout(t5) == numout(t)
+                for (c, b) in blocks(t)
+                    @test b == block(t5, c)
+                end
+                @test @constinferred(removeunit(t5, 4)) == t
+            end
+        end
+        # no basic linear algebra tests via conversion: no fusion tensor
+        @timedtestset "Tensor conversion" begin
+            W = V1 ⊗ V2
+            t = @constinferred randn(W ← W) # fusion matters here
+            @test typeof(convert(TensorMap, t')) == typeof(t)
+            tc = complex(t)
+            @test convert(typeof(tc), t) == tc
+            @test typeof(convert(typeof(tc), t)) == typeof(tc)
+            @test typeof(convert(typeof(tc), t')) == typeof(tc)
+            @test Base.promote_typeof(t, tc) == typeof(tc)
+            @test Base.promote_typeof(tc, t) == typeof(tc + t)
+        end
+        # no permutations test via inner product invariance: NoBraiding
+        # no permutations test via conversion: NoBraiding and no fusion tensor
+        @timedtestset "Full trace: test self-consistency" begin
+            t = rand(ComplexF64, V1 ⊗ V2 ← V1 ⊗ V2)
+            s = @constinferred tr(t)
+            @test conj(s) ≈ tr(t')
+            try # needed for module cases: certain transposes with module legs will result in different colorings
+                @planar s2 = t[a b; a b] # no twist needed bc permute avoided
+                @test s ≈ s2
+            catch e
+                @test isa(e, SectorMismatch)
+            end
+
+            try # TODO?: skip module traces
+                @planar t3[a; b] := t[a c; b c]
+                @planar s3 = t3[a; a] # this contraction order gives zero for VIBMop1 and VIBMop2 because it traces out the module legs
+                @test s ≈ s3
+            catch e
+                @test isa(e, SectorMismatch)
+            end
+        end
+        @timedtestset "Partial trace: test self-consistency" begin
+            t = rand(ComplexF64, V3 ⊗ V4 ⊗ V5 ← V3 ⊗ V4 ⊗ V5) # rewritten to be compatible with module fusion
+            @planar t2[a; b] := t[c a d; c b d]
+            @planar t4[a b; c d] := t[e a b; e c d]
+            @planar t5[a; b] := t4[a c; b c]
+            @test t2 ≈ t5
+        end
+        # no trace test via conversion: NoBraiding and no fusion tensor
+        @timedtestset "Trace and contraction" begin #TODO: find some version of this that works for off-diagonal case
+            t1 = rand(ComplexF64, V3 ⊗ V4 ⊗ V5)
+            t2 = rand(ComplexF64, V3 ⊗ V4 ⊗ V5)
+            t3 = t1 ⊗ t2'
+            # if all(a.i != a.j for a in blocksectors(t3))
+            #     replace!(x -> rand(ComplexF64), t3.data) # otherwise full of zeros in off-diagonal case
+            # end
+            if all(a.i == a.j for a in blocksectors(t3))
+                @planar ta[b; a] := conj(t2[x, a, y]) * t1[x, b, y] # works for diagonal case
+                @planar tb[a; b] := t3[x a y; x b y]
+                @test ta ≈ tb
+            end
+        end
+        # no tensor contraction test via conversion: NoBraiding and no fusion tensor
+        # no index flipping tests: NoBraiding
+        @timedtestset "Multiplication of isometries: test properties" begin
+            W2 = V4 ⊗ V5
+            W1 = W2 ⊗ (rightoneunit(V5) ⊕ rightoneunit(V5))
+            W3 = (leftoneunit(V4) ⊕ leftoneunit(V4)) ⊗ W2
+            for W in (W1, W3)
+                for T in (Float64, ComplexF64)
+                    t1 = @constinferred randisometry(T, W, W2)
+                    t2 = randisometry(T, W2 ← W2)
+                    @test t1' * t1 ≈ one(t2)
+                    @test t2' * t2 ≈ one(t2)
+                    @test t2 * t2' ≈ one(t2)
+                    P = t1 * t1'
+                    @test P * P ≈ P
+                end
+            end
+        end
+        @timedtestset "Multiplication and inverse: test compatibility" begin
+            W1 = V1 ⊗ V2
+            W2 = V3 ⊗ V4 ⊗ V5
+            for T in (Float64, ComplexF64)
+                t1 = rand(T, W1, W1)
+                t2 = rand(T, W2 ← W2)
+                t = rand(T, W1, W2)
+                @test t1 * (t1 \ t) ≈ t
+                @test (t / t2) * t2 ≈ t
+                @test t1 \ one(t1) ≈ inv(t1)
+                @test one(t1) / t1 ≈ pinv(t1)
+                @test_throws SpaceMismatch inv(t)
+                @test_throws SpaceMismatch t2 \ t
+                @test_throws SpaceMismatch t / t1
+                tp = pinv(t) * t
+                @test tp ≈ tp * tp
+            end
+        end
+        # no multiplication and inverse test via conversion: NoBraiding and no fusion tensor
+        @timedtestset "diag/diagm" begin
+            W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5
+            t = randn(ComplexF64, W)
+            d = LinearAlgebra.diag(t)
+            D = LinearAlgebra.diagm(codomain(t), domain(t), d)
+            @test LinearAlgebra.isdiag(D)
+            @test LinearAlgebra.diag(D) == d
+        end
+        @timedtestset "Factorization" begin
+            WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' # old left permute resulted in this space
+            WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5' # old right permute
+            WmodR = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # new fusion order for right
+            WmodL = V1 ⊗ V2 ⊗ V5' ← V3 ⊗ V4 # new fusion order for left
+
+            isdiag = all(c.i == c.j for c in blocksectors(WmodR)) # this blocksectors call should always work
+            for T in (Float32, ComplexF64)
+                # Test both a normal tensor and an adjoint one.
+                # adjoint takes other space for shape of matrix in RQ(pos)
+                tsR = isdiag ? (rand(T, WR), rand(T, WL)') : (rand(T, WmodR), rand(T, WmodL)') # shape of matrices require different spaces for left/right
+                tsL = isdiag ? (rand(T, WL), rand(T, WR)') : (rand(T, WmodR), rand(T, WmodL)')
+                for t in tsR
+                    @testset "rightorth with $alg" for alg in
+                                                    (TK.RQ(), TK.RQpos(), TK.LQ(),
+                                                        TK.LQpos(),
+                                                        TK.Polar(), TK.SVD(), TK.SDD())
+                        L, Q = @constinferred rightorth(t; alg=alg)
+                        QQd = Q * Q'
+                        @test QQd ≈ one(QQd)
+                        @test L * Q ≈ t
+                        if alg isa Polar
+                            @test isposdef(L)
+                            @test domain(L) == codomain(L) == space(t, 1) ⊗ space(t, 2)
+                        end
+                    end
+                    @testset "rightnull with $alg" for alg in (TK.LQ(), TK.SVD(), TK.SDD())
+                        M = @constinferred rightnull(t; alg=alg)
+                        MMd = M * M'
+                        @test MMd ≈ one(MMd)
+                        @test norm(t * M') < 100 * eps(norm(t))
+                    end
+                end
+                # adjoints take other space for shape of matrix in QL(pos)
+                for t in tsL
+                    @testset "leftorth with $alg" for alg in
+                                                    (TK.QR(), TK.QRpos(), TK.QL(), TK.QLpos(),
+                                                    TK.Polar(), TK.SVD(), TK.SDD())
+                        # skip QL because the monomorphism condition is hard to satisfy for off-diagonal case
+                        # have to skip Polar as well as all tests fail with modules
+                        (alg isa QL || alg isa QLpos || alg isa Polar) && !isdiag && continue
+                        Q, R = @constinferred leftorth(t; alg=alg)
+                        QdQ = Q' * Q
+                        @test QdQ ≈ one(QdQ)
+                        @test Q * R ≈ t
+                        if alg isa Polar
+                            @test isposdef(R) # this fails with modules
+                            @test domain(R) == codomain(R) == space(t, 4)' ⊗ space(t, 5)' # this as well
+                        end
+                    end
+                    @testset "leftnull with $alg" for alg in
+                                                    (TK.QR(), TK.SVD(), TK.SDD())
+                        # less rows than columns so either fails or no data in off-diagonal case
+                        !isdiag && continue
+                        N = @constinferred leftnull(t; alg=alg)
+                        NdN = N' * N
+                        @test NdN ≈ one(NdN)
+                        @test norm(N' * t) < 100 * eps(norm(t))
+                    end
+                    @testset "tsvd with $alg" for alg in (TK.SVD(), TK.SDD())
+                        U, S, V = @constinferred tsvd(t; alg=alg)
+                        UdU = U' * U
+                        @test UdU ≈ one(UdU)
+                        VVd = V * V'
+                        @test VVd ≈ one(VVd)
+                        @test U * S * V ≈ t
+
+                        s = LinearAlgebra.svdvals(t)
+                        s′ = LinearAlgebra.diag(S)
+                        for (c, b) in s
+                            @test b ≈ s′[c]
+                        end
+                    end
+                    @testset "cond and rank" begin
+                        d1 = dim(codomain(t))
+                        d2 = dim(domain(t))
+                        @test rank(t) == min(d1, d2)
+                        if isdiag # leftnull doesn't work for off-diagonal case
+                            M = leftnull(t)
+                            @test rank(M) == max(d1, d2) - min(d1, d2)
+                        end
+                        t2 = unitary(T, V1 ⊗ V2, V1 ⊗ V2)
+                        @test cond(t2) ≈ one(real(T))
+                        @test rank(t2) == dim(V1 ⊗ V2)
+                        t3 = randn(T, V1 ⊗ V2, V1 ⊗ V2)
+                        t3 = (t3 + t3') / 2
+                        vals = LinearAlgebra.eigvals(t3)
+                        λmax = maximum(s -> maximum(abs, s), values(vals))
+                        λmin = minimum(s -> minimum(abs, s), values(vals))
+                        @test cond(t3) ≈ λmax / λmin
+                    end
+                end
+
+                # how useful is this test? everything just works regardless of the space
+                @testset "empty tensor" begin
+                    t = randn(T, V1 ⊗ V2, zero(V1))
+                    @testset "leftorth with $alg" for alg in
+                                                    (TK.QR(), TK.QRpos(), TK.QL(), TK.QLpos(),
+                                                    TK.Polar(), TK.SVD(), TK.SDD())
+                        Q, R = @constinferred leftorth(t; alg=alg)
+                        @test Q == t
+                        @test dim(Q) == dim(R) == 0
+                    end
+                    @testset "leftnull with $alg" for alg in (TK.QR(), TK.SVD(), TK.SDD())
+                        N = @constinferred leftnull(t; alg=alg)
+                        @test N' * N ≈ id(domain(N))
+                        @test N * N' ≈ id(codomain(N))
+                    end
+                    @testset "rightorth with $alg" for alg in
+                                                    (TK.RQ(), TK.RQpos(), TK.LQ(),
+                                                        TK.LQpos(),
+                                                        TK.Polar(), TK.SVD(), TK.SDD())
+                        L, Q = @constinferred rightorth(copy(t'); alg=alg)
+                        @test Q == t'
+                        @test dim(Q) == dim(L) == 0
+                    end
+                    @testset "rightnull with $alg" for alg in (TK.LQ(), TK.SVD(), TK.SDD())
+                        M = @constinferred rightnull(copy(t'); alg=alg)
+                        @test M * M' ≈ id(codomain(M))
+                        @test M' * M ≈ id(domain(M))
+                    end
+                    @testset "tsvd with $alg" for alg in (TK.SVD(), TK.SDD())
+                        U, S, V = @constinferred tsvd(t; alg=alg)
+                        @test U == t
+                        @test dim(U) == dim(S) == dim(V)
+                    end
+                    @testset "cond and rank" begin
+                        @test rank(t) == 0
+                        W2 = zero(V1) * zero(V2)
+                        t2 = rand(W2, W2)
+                        @test rank(t2) == 0
+                        @test cond(t2) == 0.0
+                    end
+                end
+                t = rand(T, V1 ⊗ V2 ← V1 ⊗ V2)
+                @testset "eig and isposdef" begin
+                    D, V = eigen(t)
+                    @test t * V ≈ V * D
+
+                    d = LinearAlgebra.eigvals(t; sortby=nothing)
+                    d′ = LinearAlgebra.diag(D)
+                    for (c, b) in d
+                        @test b ≈ d′[c]
+                    end
+
+                    # Somehow moving these test before the previous one gives rise to errors
+                    # with T=Float32 on x86 platforms. Is this an OpenBLAS issue? 
+                    VdV = V' * V
+                    VdV = (VdV + VdV') / 2
+                    @test isposdef(VdV)
+
+                    @test !isposdef(t) # unlikely for non-hermitian map
+                    t2 = (t + t')
+                    D, V = eigen(t2)
+                    VdV = V' * V
+                    @test VdV ≈ one(VdV)
+                    D̃, Ṽ = @constinferred eigh(t2)
+                    @test D ≈ D̃
+                    @test V ≈ Ṽ
+                    λ = minimum(minimum(real(LinearAlgebra.diag(b)))
+                                for (c, b) in blocks(D))
+                    @test cond(Ṽ) ≈ one(real(T))
+                    @test isposdef(t2) == isposdef(λ)
+                    @test isposdef(t2 - λ * one(t2) + 0.1 * one(t2))
+                    @test !isposdef(t2 - λ * one(t2) - 0.1 * one(t2))
+                end
+            end
+        end
+        @timedtestset "Tensor truncation" begin
+            for T in (Float32, ComplexF64)
+                # Test both a normal tensor and an adjoint one.
+                ts = (randn(T, V1 ⊗ V2, V3 ⊗ V4 ⊗ V5), randn(T, V4 ⊗ V5, V3 ⊗ V1 ⊗ V2)') # rewritten for modules
+                for p in (1, 2, 3, Inf)
+                    for t in ts
+                        U₀, S₀, V₀ = tsvd(t)
+                        t = rmul!(t, 1 / norm(S₀, p))
+                        U, S, V, ϵ = @constinferred tsvd(t; trunc=truncerr(5e-1), p=p)
+                        U′, S′, V′, ϵ′ = tsvd(t; trunc=truncerr(nextfloat(ϵ)), p=p)
+                        @test (U, S, V, ϵ) == (U′, S′, V′, ϵ′)
+                        U′, S′, V′, ϵ′ = tsvd(t; trunc=truncdim(ceil(Int, dim(domain(S)))),
+                                            p=p)
+                        @test (U, S, V, ϵ) == (U′, S′, V′, ϵ′)
+                        U′, S′, V′, ϵ′ = tsvd(t; trunc=truncspace(space(S, 1)), p=p)
+                        @test (U, S, V, ϵ) == (U′, S′, V′, ϵ′)
+                        # results with truncationcutoff cannot be compared because they don't take degeneracy into account, and thus truncate differently
+                        U, S, V, ϵ = tsvd(t; trunc=truncbelow(1 / dim(domain(S₀))), p=p)
+                        U′, S′, V′, ϵ′ = tsvd(t; trunc=truncspace(space(S, 1)), p=p)
+                        @test (U, S, V, ϵ) == (U′, S′, V′, ϵ′)
+                    end
+                end
+            end
+        end
+        # no tensor functions tests: NoBraiding and no fusion tensor
+        @timedtestset "Sylvester equation" begin
+            for T in (Float32, ComplexF64)
+                tA = rand(T, V1 ⊗ V2, V1 ⊗ V2) # rewritten for modules
+                tB = rand(T, V4 ⊗ V5, V4 ⊗ V5)
+                tA = 3 // 2 * leftorth(tA; alg=TK.Polar())[1]
+                tB = 1 // 5 * leftorth(tB; alg=TK.Polar())[1]
+                tC = rand(T, V1 ⊗ V2, V4 ⊗ V5)
+                t = @constinferred sylvester(tA, tB, tC)
+                @test codomain(t) == V1 ⊗ V2
+                @test domain(t) == V4 ⊗ V5
+                @test norm(tA * t + t * tB + tC) <
+                    (norm(tA) + norm(tB) + norm(tC)) * eps(real(T))^(2 / 3)
+                # no reshape test: NoBraiding and no fusion tensor
+            end
+        end
+        @timedtestset "Tensor product: test via norm preservation" begin
+            for T in (Float32, ComplexF64)
+                t1 = rand(T, V3 ⊗ V4 ⊗ V5 ← V1 ⊗ V2)
+                if all(a.i != a.j for a in blocksectors(t1))
+                    t2 = rand(T, V5' ⊗ V4' ⊗ V3', V2' ⊗ V1')
+                else
+                    t2 = rand(T, V3' ⊗ V1, V4 ⊗ V5 ⊗ V2') # keep a non-trivial permutation in diagonal case
+                end
+                t = @constinferred (t1 ⊗ t2)
+                @test norm(t) ≈ norm(t1) * norm(t2)
+            end
+        end
+        # no tensor product test via conversion: NoBraiding and no fusion tensor
+        @timedtestset "Tensor product: test via tensor contraction" begin # works for diagonal case
+            W = V3 ⊗ V4 ⊗ V5 ← V1 ⊗ V2
+            isdiag = all(a.i == a.j for a in blocksectors(W))
+            for T in (Float32, ComplexF64)
+                if !isdiag
+                    t1 = rand(T, W)
+                    t2 = rand(T, V5' ⊗ V4' ⊗ V3', V2' ⊗ V1') # same as previous test
+                    @planar t′[1 2 3 6 7 8; 4 5 9 10] := t1[1 2 3; 4 5] * t2[6 7 8; 9 10]
+                else
+                    t1 = rand(T, V2 ⊗ V3, V1)
+                    t2 = rand(T, V2, V1 ⊗ V3)
+                    @planar t′[1 2 4; 3 5 6] := t1[1 2; 3] * t2[4; 5 6]
+                end
+                t = @constinferred (t1 ⊗ t2)
+                @test t ≈ t′
+            end
+        end
+    end
+end
 
 @testset "$Istr ($i, $j) left and right units" for i in 1:r, j in 1:r
     Cij_obs = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
