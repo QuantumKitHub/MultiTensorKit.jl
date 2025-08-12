@@ -183,9 +183,6 @@ println("---------------------------------")
 println("|    Multifusion space tests    |")
 println("---------------------------------")
 
-i = 1
-j = 2
-
 @timedtestset "Multifusion spaces " verbose = true begin
     @timedtestset "GradedSpace: $(TK.type_repr(Vect[I]))" begin
         gen = (values(I)[k] => (k + 1) for k in 1:length(values(I)))
@@ -358,7 +355,7 @@ println("---------------------------------------")
 println("|    Multifusion fusion tree tests    |")
 println("---------------------------------------")
 
-@timedtestset "Fusion trees for $(TK.type_repr(I)) involving ($i, $j)" verbose = true for i in 1:r, j in 1:7
+@timedtestset "Fusion trees for $(TK.type_repr(I)) involving ($i, $j)" verbose = true for i in 1:r, j in 1:r
     N = 6
     Mop = rand_object(I, j, i)
     M = rand_object(I, i, j)
@@ -521,13 +518,10 @@ println("---------------------------------------")
     while incoming ∉ collect(⊗(out2...)) # when i = j these don't necessarily fuse to the same object, since Mop x M doesn't return all objects in 𝒞ᵢᵢ
         Mop = rand_object(I, j, i)
         out2 = (D0, D1, Mop, C0, C1, M)
-        @show i,j
     end
 
     f1 = rand(collect(fusiontrees(out, incoming, ntuple(n -> rand(Bool), N))))
-    @info "before here?"
     f2 = rand(collect(fusiontrees(out2, incoming, ntuple(n -> rand(Bool), N))))
-    @info "or over here?"
 
     @testset "Double fusion tree $Istr: repartitioning" begin
         for n in 0:(2 * N)
@@ -551,6 +545,8 @@ println("---------------------------------------")
     end
 
     # no double fusion tree permutation tests
+
+    # very slow for (1, 6), (3, 4), (3, 5), (3, 6), (5, 6), (6, 1), (6, 5), (7, 1), (7, 4), (7, 6)
     @testset "Double fusion tree $Istr: transposition" begin
         for n in 0:(2N)
             i0 = rand(1:(2N))
