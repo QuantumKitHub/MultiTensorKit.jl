@@ -1,3 +1,11 @@
+using MultiTensorKit
+using TensorKitSectors, TensorKit
+using Test, TestExtras
+using Random
+
+const MTK = MultiTensorKit
+const TK = TensorKit
+
 I = A4Object
 Istr = TensorKitSectors.type_repr(I)
 r = size(I)
@@ -178,12 +186,6 @@ println("---------------------------------")
 i = 1
 j = 2
 
-V = (Vect[I]((i, i, label) => 1 for label in MTK._numlabels(I, i, i)),
-        Vect[I]((i, i, 1) => 1, (i, i, 2) => 2),
-        Vect[I]((i, i, 1) => 1, (i, i, 2) => 1),
-        Vect[I]((i, i, label) => 1 for label in MTK._numlabels(I, i, i)),
-        Vect[I]((i, i, 1) => 2, (i, i, 3) => 3))
-
 @timedtestset "Multifusion spaces " verbose = true begin
     @timedtestset "GradedSpace: $(TK.type_repr(Vect[I]))" begin
         gen = (values(I)[k] => (k + 1) for k in 1:length(values(I)))
@@ -308,10 +310,14 @@ V = (Vect[I]((i, i, label) => 1 for label in MTK._numlabels(I, i, i)),
         @test_throws SpaceMismatch (⊕(V, V'))
     end
 
-    # CONTINUE HERE
+    @timedtestset "HomSpace with $(TK.type_repr(Vect[I])) involving ($i, $j)" for i in 1:r, j in 1:r
+        V = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+        Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)),
+        Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+        Vect[I]((i, j, 1) => 3),
+        Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)))
 
-    @timedtestset "HomSpace with $(TK.type_repr(Vect[I])) " begin
-        for (V1, V2, V3, V4, V5) in (VIBC, VIBD, VIBM1, VIBM2, VIBMop1, VIBMop2)
+        for (V1, V2, V3, V4, V5) in (V,)
             W = HomSpace(V1 ⊗ V2, V3 ⊗ V4 ⊗ V5)
             @test W == (V3 ⊗ V4 ⊗ V5 → V1 ⊗ V2)
             @test W == (V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5)
@@ -344,6 +350,256 @@ V = (Vect[I]((i, i, label) => 1 for label in MTK._numlabels(I, i, i)),
             @test @constinferred(removeunit(insertleftunit(W, 3), 3)) == W
             @test_throws ErrorException @constinferred(insertrightunit(one(V1) ← V1, 0)) # should I specify it's the other error?
             @test_throws ErrorException insertleftunit(one(V1) ← V1, 0)
+        end
+    end
+end
+
+println("---------------------------------------")
+println("|    Multifusion fusion tree tests    |")
+println("---------------------------------------")
+
+@timedtestset "Fusion trees for $(TK.type_repr(I)) involving ($i, $j)" verbose = true for i in 1:r, j in 1:7
+    N = 6
+    Mop = rand_object(I, j, i)
+    M = rand_object(I, i, j)
+    C0 = one(I(i, i, 1))
+    C1 = rand_object(I, i, i) 
+    D0 = one(I(j, j, 1))
+    D1 = rand_object(I, j, j)
+    out = (Mop, C0, C1, M, D0, D1) # should I try to make a non-hardcoded example? could vary number of Cs and Ds, as well as randomly fuse and check if allowed
+    isdual = ntuple(n -> rand(Bool), N)
+    in = rand(collect(⊗(out...))) # will be in 𝒞ⱼⱼ with this choice of out
+
+    numtrees = length(fusiontrees(out, in, isdual)) # will be 1 for i != j
+    @test numtrees == count(n -> true, fusiontrees(out, in, isdual))
+
+    it = @constinferred fusiontrees(out, in, isdual)
+    @constinferred Nothing iterate(it)
+    f, s = iterate(it)
+    @constinferred Nothing iterate(it, s)
+    @test f == @constinferred first(it)
+    @testset "Fusion tree $Istr: printing" begin
+        @test eval(Meta.parse(sprint(show, f))) == f
+    end
+
+    @testset "Fusion tree $Istr: constructor properties" for u in (C0, D0)
+        @constinferred FusionTree((), u, (), (), ())
+        @constinferred FusionTree((u,), u, (false,), (), ())
+        @constinferred FusionTree((u, u), u, (false, false), (), (1,))
+        @constinferred FusionTree((u, u, u), u, (false, false, false), (u,), (1, 1))
+        @constinferred FusionTree((u, u, u, u), u, (false, false, false, false), (u, u),
+                                  (1, 1, 1))
+        @test_throws MethodError FusionTree((u, u, u), u, (false, false), (u,), (1, 1))
+        @test_throws MethodError FusionTree((u, u, u), u, (false, false, false), (u, u),
+                                            (1, 1))
+        @test_throws MethodError FusionTree((u, u, u), u, (false, false, false), (u,),
+                                            (1, 1, 1))
+        @test_throws MethodError FusionTree((u, u, u), u, (false, false, false), (), (1,))
+
+        f = FusionTree((u, u, u), u, (false, false, false), (u,), (1, 1))
+        @test sectortype(f) == I
+        @test length(f) == 3
+        @test FusionStyle(f) == FusionStyle(I)
+        @test BraidingStyle(f) == BraidingStyle(I)
+
+        # SimpleFusion
+        errstr = "fusion tree requires inner lines if `FusionStyle(I) <: MultipleFusion`"
+        @test_throws errstr FusionTree((), u, ())
+        @test_throws errstr FusionTree((u,), u, (false,))
+        @test_throws errstr FusionTree((u, u), u, (false, false))
+        @test_throws errstr FusionTree((u, u, u), u)
+        @test_throws errstr FusionTree((u, u, u, u)) # custom FusionTree constructor required here
+    end
+
+    @testset "Fusion tree $Istr: insertat" begin
+        N = 4
+        out2 = random_fusion(I, i, j, N)
+        in2 = rand(collect(⊗(out2...)))
+        isdual2 = ntuple(n -> rand(Bool), N)
+        f2 = rand(collect(fusiontrees(out2, in2, isdual2)))
+        for k in 1:N
+            out1, in1 = nothing, nothing
+            while in1 === nothing
+                try
+                    out1 = random_fusion(I, i, j, N) # guaranteed good fusion
+                    out1 = Base.setindex(out1, in2, k) # can lead to poor fusion
+                    in1 = rand(collect(⊗(out1...)))
+                catch e
+                    if isa(e, AssertionError)
+                        in1 = nothing # keep trying till out1 is compatible with inserting in2 at k
+                    else
+                        rethrow(e)
+                    end
+                end
+            end
+            isdual1 = ntuple(n -> rand(Bool), N)
+            isdual1 = Base.setindex(isdual1, false, k)
+            f1 = rand(collect(fusiontrees(out1, in1, isdual1)))
+
+            trees = @constinferred TK.insertat(f1, k, f2)
+            @test norm(values(trees)) ≈ 1
+
+            f1a, f1b = @constinferred TK.split(f1, $k)
+            @test length(TK.insertat(f1b, 1, f1a)) == 1
+            @test first(TK.insertat(f1b, 1, f1a)) == (f1 => 1)
+
+            # no braid tests for non-hardcoded example
+        end
+    end
+    # no planar trace tests
+    
+    @testset "Fusion tree $Istr: elementary artin braid" begin
+        N = length(out)
+        isdual = ntuple(n -> rand(Bool), N)
+        # no general artin braid test
+
+        # not sure how useful this test is, it does the trivial braiding (choice of out)
+        f = rand(collect(it)) # in this case the 1 tree
+        d1 = TK.artin_braid(f, 2) # takes unit C0 with current out
+        d2 = empty(d1)
+        for (f1, coeff1) in d1
+            for (f2, coeff2) in TK.artin_braid(f1, 3)
+                d2[f2] = get(d2, f2, zero(coeff1)) + coeff2 * coeff1
+            end
+        end
+        d1 = d2
+        d2 = empty(d1)
+        for (f1, coeff1) in d1
+            for (f2, coeff2) in TK.artin_braid(f1, 3; inv=true)
+                d2[f2] = get(d2, f2, zero(coeff1)) + coeff2 * coeff1
+            end
+        end
+        d1 = d2
+        d2 = empty(d1)
+        for (f1, coeff1) in d1
+            for (f2, coeff2) in TK.artin_braid(f1, 2; inv=true)
+                d2[f2] = get(d2, f2, zero(coeff1)) + coeff2 * coeff1
+            end
+        end
+        d1 = d2
+        for (f1, coeff1) in d1
+            if f1 == f
+                @test coeff1 ≈ 1
+            else
+                @test isapprox(coeff1, 0; atol=1.0e-12, rtol=1.0e-12)
+            end
+        end
+    end
+
+    # no braiding and permuting test
+    @testset "Fusion tree $Istr: merging" begin
+        N = 3
+        out1 = random_fusion(I, i, j, N)
+        out2 = random_fusion(I, i, j, N)
+        in1 = rand(collect(⊗(out1...)))
+        in2 = rand(collect(⊗(out2...)))
+        tp = safe_tensor_product(in1, in2) # messy solution but it works
+        while tp === nothing
+            out1 = random_fusion(I, i, j, N)
+            out2 = random_fusion(I, i, j, N)
+            in1 = rand(collect(⊗(out1...)))
+            in2 = rand(collect(⊗(out2...)))
+            tp = safe_tensor_product(in1, in2)
+        end
+
+        f1 = rand(collect(fusiontrees(out1, in1)))
+        f2 = rand(collect(fusiontrees(out2, in2)))
+
+
+        @test dim(in1) * dim(in2) ≈ sum(abs2(coeff) * dim(c) for c in in1 ⊗ in2
+                                        for μ in 1:Nsymbol(in1, in2, c)
+                                        for (f, coeff) in TK.merge(f1, f2, c, μ))
+        # no merge and braid interplay tests
+    end
+
+    # hardcoded double fusion tree tests
+    N = 6
+    out = (Mop, C0, C1, M, D0, D1) # same as above
+    out2 = (D0, D1, Mop, C0, C1, M) # different order that still fuses to D0 or D1
+
+    incoming = rand(collect(⊗(out...))) # will be in 𝒞ⱼⱼ
+    while incoming ∉ collect(⊗(out2...)) # when i = j these don't necessarily fuse to the same object, since Mop x M doesn't return all objects in 𝒞ᵢᵢ
+        Mop = rand_object(I, j, i)
+        out2 = (D0, D1, Mop, C0, C1, M)
+        @show i,j
+    end
+
+    f1 = rand(collect(fusiontrees(out, incoming, ntuple(n -> rand(Bool), N))))
+    @info "before here?"
+    f2 = rand(collect(fusiontrees(out2, incoming, ntuple(n -> rand(Bool), N))))
+    @info "or over here?"
+
+    @testset "Double fusion tree $Istr: repartitioning" begin
+        for n in 0:(2 * N)
+            d = @constinferred TK.repartition(f1, f2, $n)
+            @test dim(incoming) ≈
+                  sum(abs2(coef) * dim(f1.coupled) for ((f1, f2), coef) in d)
+            d2 = Dict{typeof((f1, f2)),valtype(d)}()
+            for ((f1′, f2′), coeff) in d
+                for ((f1′′, f2′′), coeff2) in TK.repartition(f1′, f2′, N)
+                    d2[(f1′′, f2′′)] = get(d2, (f1′′, f2′′), zero(coeff)) + coeff2 * coeff
+                end
+            end
+            for ((f1′, f2′), coeff2) in d2
+                if f1 == f1′ && f2 == f2′
+                    @test coeff2 ≈ 1
+                else
+                    @test isapprox(coeff2, 0; atol=1.0e-12, rtol=1.0e-12)
+                end
+            end
+        end
+    end
+
+    # no double fusion tree permutation tests
+    @testset "Double fusion tree $Istr: transposition" begin
+        for n in 0:(2N)
+            i0 = rand(1:(2N))
+            p = mod1.(i0 .+ (1:(2N)), 2N)
+            ip = mod1.(-i0 .+ (1:(2N)), 2N)
+            p′ = tuple(getindex.(Ref(vcat(1:N, (2N):-1:(N + 1))), p)...)
+            p1, p2 = p′[1:n], p′[(2N):-1:(n + 1)]
+            ip′ = tuple(getindex.(Ref(vcat(1:n, (2N):-1:(n + 1))), ip)...)
+            ip1, ip2 = ip′[1:N], ip′[(2N):-1:(N + 1)]
+
+            d = @constinferred transpose(f1, f2, p1, p2)
+            @test dim(incoming) ≈
+                  sum(abs2(coef) * dim(f1.coupled) for ((f1, f2), coef) in d)
+            d2 = Dict{typeof((f1, f2)),valtype(d)}()
+            for ((f1′, f2′), coeff) in d
+                d′ = transpose(f1′, f2′, ip1, ip2)
+                for ((f1′′, f2′′), coeff2) in d′
+                    d2[(f1′′, f2′′)] = get(d2, (f1′′, f2′′), zero(coeff)) + coeff2 * coeff
+                end
+            end
+            for ((f1′, f2′), coeff2) in d2
+                if f1 == f1′ && f2 == f2′
+                    @test coeff2 ≈ 1
+                else
+                    @test abs(coeff2) < 1.0e-12
+                end
+            end
+        end
+    end
+    
+    @testset "Double fusion tree $Istr: planar trace" begin
+        d1 = transpose(f1, f1, (N + 1, 1:N..., ((2N):-1:(N + 3))...), (N + 2,))
+        f1front, = TK.split(f1, N - 1)
+        T = sectorscalartype(I)
+        d2 = Dict{typeof((f1front, f1front)),T}()
+        for ((f1′, f2′), coeff′) in d1
+            for ((f1′′, f2′′), coeff′′) in
+                TK.planar_trace(f1′, f2′, (2:N...,), (1, ((2N):-1:(N + 3))...), (N + 1,),
+                                (N + 2,))
+                coeff = coeff′ * coeff′′
+                d2[(f1′′, f2′′)] = get(d2, (f1′′, f2′′), zero(coeff)) + coeff
+            end
+        end
+        for ((f1_, f2_), coeff) in d2
+            if (f1_, f2_) == (f1front, f1front)
+                @test coeff ≈ dim(f1.coupled) / dim(f1front.coupled)
+            else
+                @test abs(coeff) < 1.0e-12
+            end
         end
     end
 end
