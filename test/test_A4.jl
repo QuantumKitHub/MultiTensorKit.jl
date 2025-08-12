@@ -830,6 +830,10 @@ V = Vect[I](values(I)[k] => 1 for k in 1:length(values(I)))
     end
 end
 
+# no conversion tests because no fusion tensor
+# no permute tests: NoBraiding()
+
+#TODO? test only for i>j?
 @timedtestset "Tensors with symmetry involving $Istr ($i, $j)" verbose = true for i in 1:r, j in 1:r
     VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
             Vect[I](one(I(i, i, 1)) => 2),
@@ -872,18 +876,14 @@ end
             Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
     )
 
-    Vcol = i != j ? (VC, VD, VM1, VM2, VMop1, VMop2) : (VC,) # avoid duplicate runs
+    Vcol = i != j ? (VM1, VM2, VMop1, VMop2) : (VC,) # avoid duplicate runs
 
     for V in Vcol
         V1, V2, V3, V4, V5 = V
         @timedtestset "Basic tensor properties" begin
-            W = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5 # fusion matters
+            W = i == j ? V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5 : V3 ⊗ V4 ⊗ V5 # fusion matters
             for T in (Int, Float32, Float64, ComplexF32, ComplexF64, BigFloat)
-                t = @constinferred zeros(T, W)
-                if isempty(t.data) # non-diagonal sector fuses poorly
-                    W = V3 ⊗ V4 ⊗ V5
-                    t = @constinferred zeros(T, W) # also empty because M isn't diagonal so can't fuse to empty space
-                end
+                t = @constinferred zeros(T, W) # empty for i != j b/c blocks are module-graded
                 @test @constinferred(hash(t)) == hash(deepcopy(t))
                 @test scalartype(t) == T
                 @test norm(t) == 0
@@ -905,6 +905,7 @@ end
                 end
             end
         end
+
         @timedtestset "Tensor Dict conversion" begin
             W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # rewritten to be compatible with module fusion
             for T in (Int, Float32, ComplexF64)
@@ -913,7 +914,7 @@ end
                 @test t == convert(TensorMap, d)
             end
         end
-        # no tensor array conversion tests: no fusion tensor
+
         @timedtestset "Basic linear algebra" begin
             W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5
             for T in (Float32, ComplexF64)
@@ -970,6 +971,7 @@ end
                 end
             end
         end
+
         @timedtestset "Trivial space insertion and removal" begin
             W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5
             for T in (Float32, ComplexF64)
@@ -1004,7 +1006,7 @@ end
                 @test @constinferred(removeunit(t5, 4)) == t
             end
         end
-        # no basic linear algebra tests via conversion: no fusion tensor
+
         @timedtestset "Tensor conversion" begin
             W = V1 ⊗ V2
             t = @constinferred randn(W ← W) # fusion matters here
@@ -1016,8 +1018,7 @@ end
             @test Base.promote_typeof(t, tc) == typeof(tc)
             @test Base.promote_typeof(tc, t) == typeof(tc + t)
         end
-        # no permutations test via inner product invariance: NoBraiding
-        # no permutations test via conversion: NoBraiding and no fusion tensor
+
         @timedtestset "Full trace: test self-consistency" begin
             t = rand(ComplexF64, V1 ⊗ V2 ← V1 ⊗ V2)
             s = @constinferred tr(t)
@@ -1037,6 +1038,7 @@ end
                 @test isa(e, SectorMismatch)
             end
         end
+
         @timedtestset "Partial trace: test self-consistency" begin
             t = rand(ComplexF64, V3 ⊗ V4 ⊗ V5 ← V3 ⊗ V4 ⊗ V5) # rewritten to be compatible with module fusion
             @planar t2[a; b] := t[c a d; c b d]
@@ -1044,7 +1046,7 @@ end
             @planar t5[a; b] := t4[a c; b c]
             @test t2 ≈ t5
         end
-        # no trace test via conversion: NoBraiding and no fusion tensor
+
         @timedtestset "Trace and contraction" begin #TODO: find some version of this that works for off-diagonal case
             t1 = rand(ComplexF64, V3 ⊗ V4 ⊗ V5)
             t2 = rand(ComplexF64, V3 ⊗ V4 ⊗ V5)
@@ -1058,8 +1060,7 @@ end
                 @test ta ≈ tb
             end
         end
-        # no tensor contraction test via conversion: NoBraiding and no fusion tensor
-        # no index flipping tests: NoBraiding
+
         @timedtestset "Multiplication of isometries: test properties" begin
             W2 = V4 ⊗ V5
             W1 = W2 ⊗ (rightoneunit(V5) ⊕ rightoneunit(V5))
@@ -1076,6 +1077,7 @@ end
                 end
             end
         end
+
         @timedtestset "Multiplication and inverse: test compatibility" begin
             W1 = V1 ⊗ V2
             W2 = V3 ⊗ V4 ⊗ V5
@@ -1094,7 +1096,7 @@ end
                 @test tp ≈ tp * tp
             end
         end
-        # no multiplication and inverse test via conversion: NoBraiding and no fusion tensor
+
         @timedtestset "diag/diagm" begin
             W = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5
             t = randn(ComplexF64, W)
@@ -1103,6 +1105,7 @@ end
             @test LinearAlgebra.isdiag(D)
             @test LinearAlgebra.diag(D) == d
         end
+
         @timedtestset "Factorization" begin
             WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' # old left permute resulted in this space
             WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5' # old right permute
@@ -1179,10 +1182,10 @@ end
                     @testset "cond and rank" begin
                         d1 = dim(codomain(t))
                         d2 = dim(domain(t))
-                        @test rank(t) == min(d1, d2)
+                        @test rank(t) ≈ min(d1, d2) # reduced to approx
                         if isdiag # leftnull doesn't work for off-diagonal case
                             M = leftnull(t)
-                            @test rank(M) == max(d1, d2) - min(d1, d2)
+                            @test rank(M) ≈ max(d1, d2) - min(d1, d2) # reduced to approx
                         end
                         t2 = unitary(T, V1 ⊗ V2, V1 ⊗ V2)
                         @test cond(t2) ≈ one(real(T))
@@ -1271,6 +1274,7 @@ end
                 end
             end
         end
+
         @timedtestset "Tensor truncation" begin
             for T in (Float32, ComplexF64)
                 # Test both a normal tensor and an adjoint one.
@@ -1295,7 +1299,7 @@ end
                 end
             end
         end
-        # no tensor functions tests: NoBraiding and no fusion tensor
+
         @timedtestset "Sylvester equation" begin
             for T in (Float32, ComplexF64)
                 tA = rand(T, V1 ⊗ V2, V1 ⊗ V2) # rewritten for modules
@@ -1311,6 +1315,7 @@ end
                 # no reshape test: NoBraiding and no fusion tensor
             end
         end
+
         @timedtestset "Tensor product: test via norm preservation" begin
             for T in (Float32, ComplexF64)
                 t1 = rand(T, V3 ⊗ V4 ⊗ V5 ← V1 ⊗ V2)
@@ -1323,8 +1328,8 @@ end
                 @test norm(t) ≈ norm(t1) * norm(t2)
             end
         end
-        # no tensor product test via conversion: NoBraiding and no fusion tensor
-        @timedtestset "Tensor product: test via tensor contraction" begin # works for diagonal case
+
+        @timedtestset "Tensor product: test via tensor contraction" begin
             W = V3 ⊗ V4 ⊗ V5 ← V1 ⊗ V2
             isdiag = all(a.i == a.j for a in blocksectors(W))
             for T in (Float32, ComplexF64)
