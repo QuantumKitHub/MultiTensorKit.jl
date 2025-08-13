@@ -1,7 +1,6 @@
 module MultiTensorKit
 
 export BimoduleSector, A4Object
-export leftoneunit, rightoneunit
 
 using DelimitedFiles
 using Artifacts
