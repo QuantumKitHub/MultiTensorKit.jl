@@ -293,18 +293,9 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
     end
 end
 
-function rounddim(c::I) where {I<:BimoduleSector}
-    _dim = dim(c)
-    if _dim ≈ floor(_dim)
-        return floor(_dim)
-    else
-        return _dim
-    end
-end
-
 function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
     T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
-    return reduce(+, dim(V, c) * rounddim(c) for c in sectors(V); init=zero(T))
+    return reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(T))
 end
 
 Base.zero(S::Type{<:GradedSpace{<:BimoduleSector}}) = S()
