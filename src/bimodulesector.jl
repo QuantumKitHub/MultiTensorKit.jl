@@ -336,7 +336,7 @@ function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
 end
 
 # oneunit for spaces whose elements all belong to the same sector
-function rightoneunit(S::GradedSpace{<:BimoduleSector})
+function TensorKit.rightoneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.j for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S do not have the same rightone"))
 
@@ -344,12 +344,12 @@ function rightoneunit(S::GradedSpace{<:BimoduleSector})
     return spacetype(S)(sector => 1)
 end
 
-function rightoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+function TensorKit.rightoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     @assert !isempty(S) "Cannot determine type of empty space"
     return SumSpace(rightoneunit(first(S.spaces)))
 end
 
-function leftoneunit(S::GradedSpace{<:BimoduleSector})
+function TensorKit.leftoneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.i for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S do not have the same leftone"))
 
@@ -357,7 +357,7 @@ function leftoneunit(S::GradedSpace{<:BimoduleSector})
     return spacetype(S)(sector => 1)
 end
 
-function leftoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+function TensorKit.leftoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     @assert !isempty(S) "Cannot determine type of empty space"
     return SumSpace(leftoneunit(first(S.spaces)))
 end
@@ -412,6 +412,6 @@ function TensorKit.FusionTree(uncoupled::Tuple{<:I,Vararg{I}}) where {I<:Bimodul
 end
 
 # this one might also be overkill, since `FusionTreeIterator`s don't check whether the fusion is allowed
-function fusiontrees(uncoupled::Tuple{I,Vararg{I}}) where {I<:BimoduleSector}
+function TensorKit.fusiontrees(uncoupled::Tuple{I,Vararg{I}}) where {I<:BimoduleSector}
     return throw(ArgumentError("coupled sector must be provided for $I fusion"))
 end
