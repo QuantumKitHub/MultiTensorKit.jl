@@ -67,6 +67,8 @@ end
             @test eval(Meta.parse(sprint(show, m))) == m
             @test @constinferred(hash(m)) == hash(deepcopy(m))
 
+            @test isone(m) == false
+            @test isone(mop) == false
             @test (isone(@constinferred(leftone(m))) && isone(@constinferred(rightone(m))))
             @test one(c) == leftone(m) == rightone(mop)
             @test one(d) == rightone(m) == leftone(mop)
