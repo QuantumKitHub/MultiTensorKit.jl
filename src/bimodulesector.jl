@@ -284,10 +284,10 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
                                                for i in 1:size(A4Object)) # have to return all units b/c no info on W in this case
     elseif N₁ == 0
         @assert N₂ != 0 "one of Type A4Object doesn't exist"
-        return filter!(c -> c == leftone(c) == rightone(c), collect(blocksectors(dom)))
+        return filter!(isone, collect(blocksectors(dom)))
     elseif N₂ == 0
         @assert N₁ != 0 "one of Type A4Object doesn't exist"
-        return filter!(c -> c == leftone(c) == rightone(c), collect(blocksectors(codom)))
+        return filter!(isone, collect(blocksectors(codom)))
     elseif N₂ <= N₁ # keep intersection
         return filter!(c -> hasblock(codom, c), collect(blocksectors(dom)))
     else
