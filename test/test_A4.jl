@@ -1195,11 +1195,10 @@ end
 
     @timedtestset "Factorization" for V in fact_Vs
         V1, V2, V3, V4, V5 = V
-        # TODO: try ifelse/?: here
-        WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' # old left permute resulted in this space
-        WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5' # old right permute
-        WmodR = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # new fusion order for right
-        WmodL = V1 ⊗ V2 ⊗ V5' ← V3 ⊗ V4 # new fusion order for left
+        WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' 
+        WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5'
+        WmodR = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # custom fusion order for off-diagonal case
+        WmodL = V1 ⊗ V2 ⊗ V5' ← V3 ⊗ V4
 
         for T in (Float32, ComplexF64)
             # Test both a normal tensor and an adjoint one.
@@ -1211,7 +1210,6 @@ end
                                                 (TK.RQ(), TK.RQpos(), TK.LQ(),
                                                     TK.LQpos(),
                                                     TK.Polar(), TK.SVD(), TK.SDD())
-                    (alg isa RQ || alg isa RQpos || alg isa Polar) && !isdiag && continue
                     L, Q = @constinferred rightorth(t; alg=alg)
                     QQd = Q * Q'
                     @test QQd ≈ one(QQd)
