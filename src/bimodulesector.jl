@@ -15,6 +15,7 @@ struct BimoduleSector{Name} <: Sector
 end
 
 BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
+BimoduleSectorName(::Type{BimoduleSector{Name}}) where {Name} = Name
 const A4Object = BimoduleSector{:A4}
 
 Base.convert(::Type{<:BimoduleSector{Name}}, labels::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(labels...)
@@ -55,21 +56,21 @@ function Base.iterate(iter::SectorValues{<:BimoduleSector}, (I, label)=(1, 1))
     end
 end
 
-function Base.length(::SectorValues{A4Object})
-    s = size(A4Object)
-    return sum(_numlabels(A4Object, i, j) for i in 1:s, j in 1:s)
+function Base.length(::SectorValues{I}) where {I<:BimoduleSector}
+    s = size(I)
+    return sum(_numlabels(I, i, j) for i in 1:s, j in 1:s)
 end
 
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
-TensorKitSectors.BraidingStyle(::Type{A4Object}) = NoBraiding()
+TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()
 TensorKitSectors.sectorscalartype(::Type{A4Object}) = ComplexF64
 
-function TensorKitSectors.:⊗(a::A4Object, b::A4Object)
+function TensorKitSectors.:⊗(a::I, b::I) where {I<:BimoduleSector}
     @assert a.j == b.i
-    Ncache = _get_Ncache(A4Object)[a.i, a.j, b.j]
-    return A4Object[A4Object(a.i, b.j, c_l)
-                    for (a_l, b_l, c_l) in keys(Ncache)
-                    if (a_l == a.label && b_l == b.label)]
+    Ncache = _get_Ncache(I)[a.i, a.j, b.j]
+    return I[I(a.i, b.j, c_l)
+             for (a_l, b_l, c_l) in keys(Ncache)
+             if (a_l == a.label && b_l == b.label)]
 end
 
 function _numlabels(::Type{T}, i, j) where {T<:BimoduleSector}
@@ -84,14 +85,15 @@ end
 # ---------------
 const artifact_path = joinpath(artifact"fusiondata", "MultiTensorKit.jl-data-v0.1.5")
 
-function extract_Nsymbol(::Type{A4Object})
-    filename = joinpath(artifact_path, "A4", "Nsymbol.txt")
-    isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for A4"))
+function extract_Nsymbol(::Type{I}) where {I <: BimoduleSector}
+    name = string(BimoduleSectorName(I))
+    filename = joinpath(artifact_path, name, "Nsymbol.txt")
+    isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for $name"))
     Narray = readdlm(filename) # matrix with 7 columns
 
     data_dict = Dict{NTuple{3,Int},Dict{NTuple{3,Int},Int}}()
     for row in eachrow(Narray)
-        i, j, k, a, b, c, N = Int.(@view(row[1:size(A4Object)]))
+        i, j, k, a, b, c, N = Int.(@view(row[1:size(I)]))
         colordict = get!(data_dict, (i, j, k), Dict{NTuple{3,Int},Int}())
         push!(colordict, (a, b, c) => N)
     end
@@ -109,7 +111,7 @@ function _get_Ncache(::Type{T}) where {T<:BimoduleSector}
     end
 end
 
-function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:A4Object}
+function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:BimoduleSector}
     # TODO: should this error or return 0?
     (a.j == b.i && a.i == c.i && b.j == c.j) ||
         throw(ArgumentError("invalid fusion channel"))
@@ -126,9 +128,9 @@ function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
     end
 end
 
-function extract_dual(::Type{A4Object})
-    N = _get_Ncache(A4Object)
-    ncats = size(A4Object)
+function extract_dual(::Type{I}) where {I <: BimoduleSector}
+    N = _get_Ncache(I)
+    ncats = size(I)
     Is = zeros(Int, ncats)
 
     map(1:ncats) do i
@@ -205,15 +207,16 @@ function Base.conj(a::BimoduleSector)
     return typeof(a)(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i, a.j][a.label])
 end
 
-function extract_Fsymbol(::Type{A4Object})
+function extract_Fsymbol(::Type{I}) where {I <: BimoduleSector}
     result = Dict{NTuple{4,Int},Dict{NTuple{6,Int},Array{ComplexF64,4}}}()
-    filename = joinpath(artifact_path, "A4", "Fsymbol.txt")
+    name = string(BimoduleSectorName(I))
+    filename = joinpath(artifact_path, name, "Fsymbol.txt")
     @assert isfile(filename) "cannot find $filename"
     Farray = readdlm(filename)
     for ((i, j, k, l), colordict) in convert_Fs(Farray)
         result[(i, j, k, l)] = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
         for ((a, b, c, d, e, f), Fvals) in colordict
-            a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
+            a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = I.(((i, j, a), (j, k, b),
                                                             (k, l, c), (i, l, d),
                                                             (i, k, e), (j, l, f)))
             result[(i, j, k, l)][(a, b, c, d, e, f)] = zeros(ComplexF64,
@@ -221,8 +224,8 @@ function extract_Fsymbol(::Type{A4Object})
                                                              Nsymbol(e_ob, c_ob, d_ob),
                                                              Nsymbol(b_ob, c_ob, f_ob),
                                                              Nsymbol(a_ob, f_ob, d_ob))
-            for (I, v) in Fvals
-                result[(i, j, k, l)][(a, b, c, d, e, f)][I] = v
+            for (K, v) in Fvals
+                result[(i, j, k, l)][(a, b, c, d, e, f)][K] = v
             end
         end
     end
@@ -258,7 +261,7 @@ function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
 end
 
 function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
-                                  f::I) where {I<:A4Object}
+                                  f::I) where {I<:BimoduleSector}
     # required to keep track of multiplicities where F-move is partially unallowed
     # also deals with invalid fusion channels
     Nabe = Nsymbol(a, b, e)
@@ -278,6 +281,7 @@ end
 # interface with TensorKit where necessary
 #-----------------------------------------
 
+#TODO: generalise
 function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
          {S<:Union{Vect[A4Object],
                    SumSpace{Vect[A4Object]}},N₁,N₂}
