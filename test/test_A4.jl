@@ -836,30 +836,34 @@ end
 # no permute tests: NoBraiding()
 
 @timedtestset "Tensors with symmetry involving $Istr ($i, $j)" verbose = true for i in 1:r, j in 1:r
-    VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-            Vect[I](one(I(i, i, 1)) => 2),
-            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
-            Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-            Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
-    )
+    #TODO: refactor isdiag check
 
-    VM1 = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)), # written so V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 works
-            Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)), # important that V4 is module-graded
+    VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+                Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),   # avoids OOMs?
+                Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
+                Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+                Vect[I](one(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
+        )
+
+    VM = Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)) # all module objects 
+
+    VM1 = (Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1), # written so V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 works
+            Vect[I](rand_object(I, i, j) => 2), # generally less blocksectors
             Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
-            Vect[I](rand_object(I, i, j) => 1),
+            VM, # important that V4 is module-graded
             Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
     )
 
-    VM2 = (Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)), # second set where module is V1 here
-            Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)),
+    VM2 = (Vect[I](rand_object(I, i, j) => 2), # second set where module is V1 here
+            Vect[I](one(I(j, j, 1)) => 1, rand_object(I, j, j) => 1),
             Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
-            Vect[I](rand_object(I, i, j) => 2),
+            VM,
             Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
     )
 
     Vcol = i != j ? (VM1, VM2) : (VC,) # avoid duplicate runs
 
-    for V in Vcol
+    for V in Vcol # TODO: add enumerate to keep track of potential erroring space
         V1, V2, V3, V4, V5 = V
         @timedtestset "Basic tensor properties" begin
             W = i == j ? V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5 : V3 ⊗ V4 ⊗ V5 # fusion matters
@@ -1087,181 +1091,6 @@ end
             @test LinearAlgebra.diag(D) == d
         end
 
-        # some fail for (2, 2), (3, 3), (6, 6)
-        # rightorth RQ(pos) and Polar (fail) for 2nd space
-        # leftorth with QL(pos) and Polar for 1st space
-        # leftnull QR for 1st space
-        # cond and rank leftnull for 1st space
-        @timedtestset "Factorization" begin
-            WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' # old left permute resulted in this space
-            WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5' # old right permute
-            WmodR = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # new fusion order for right
-            WmodL = V1 ⊗ V2 ⊗ V5' ← V3 ⊗ V4 # new fusion order for left
-
-            isdiag = all(c.i == c.j for c in blocksectors(WmodR)) # this blocksectors call should always work
-            for T in (Float32, ComplexF64)
-                # Test both a normal tensor and an adjoint one.
-                # adjoint takes other space for shape of matrix in RQ(pos)
-                tsR = isdiag ? (rand(T, WR), rand(T, WL)') : (rand(T, WmodR), rand(T, WmodL)') # shape of matrices require different spaces for left/right
-                tsL = isdiag ? (rand(T, WL), rand(T, WR)') : (rand(T, WmodR), rand(T, WmodL)')
-                for t in tsR
-                    @testset "rightorth with $alg" for alg in
-                                                    (TK.RQ(), TK.RQpos(), TK.LQ(),
-                                                        TK.LQpos(),
-                                                        TK.Polar(), TK.SVD(), TK.SDD())
-                        (alg isa RQ || alg isa RQpos || alg isa Polar) && !isdiag && continue
-                        L, Q = @constinferred rightorth(t; alg=alg)
-                        QQd = Q * Q'
-                        @test QQd ≈ one(QQd)
-                        @test L * Q ≈ t
-                        if alg isa Polar
-                            @test isposdef(L)
-                            @test domain(L) == codomain(L) == space(t, 1) ⊗ space(t, 2)
-                        end
-                    end
-                    @testset "rightnull with $alg" for alg in (TK.LQ(), TK.SVD(), TK.SDD())
-                        M = @constinferred rightnull(t; alg=alg)
-                        MMd = M * M'
-                        @test MMd ≈ one(MMd)
-                        @test norm(t * M') < 100 * eps(norm(t))
-                    end
-                end
-                # adjoints take other space for shape of matrix in QL(pos)
-                for t in tsL
-                    @testset "leftorth with $alg" for alg in
-                                                    (TK.QR(), TK.QRpos(), TK.QL(), TK.QLpos(),
-                                                    TK.Polar(), TK.SVD(), TK.SDD())
-                        # skip QL because the monomorphism condition is hard to satisfy for off-diagonal case
-                        # have to skip Polar as well as all tests fail with modules
-                        (alg isa QL || alg isa QLpos || alg isa Polar) && !isdiag && continue
-                        Q, R = @constinferred leftorth(t; alg=alg)
-                        QdQ = Q' * Q
-                        @test QdQ ≈ one(QdQ)
-                        @test Q * R ≈ t
-                        if alg isa Polar
-                            @test isposdef(R) # this fails with modules
-                            @test domain(R) == codomain(R) == space(t, 4)' ⊗ space(t, 5)' # this as well
-                        end
-                    end
-                    @testset "leftnull with $alg" for alg in
-                                                    (TK.QR(), TK.SVD(), TK.SDD())
-                        # less rows than columns so either fails or no data in off-diagonal case
-                        !isdiag && continue
-                        N = @constinferred leftnull(t; alg=alg)
-                        NdN = N' * N
-                        @test NdN ≈ one(NdN)
-                        @test norm(N' * t) < 100 * eps(norm(t))
-                    end
-                    @testset "tsvd with $alg" for alg in (TK.SVD(), TK.SDD())
-                        U, S, V = @constinferred tsvd(t; alg=alg)
-                        UdU = U' * U
-                        @test UdU ≈ one(UdU)
-                        VVd = V * V'
-                        @test VVd ≈ one(VVd)
-                        @test U * S * V ≈ t
-
-                        s = LinearAlgebra.svdvals(t)
-                        s′ = LinearAlgebra.diag(S)
-                        for (c, b) in s
-                            @test b ≈ s′[c]
-                        end
-                    end
-                    @testset "cond and rank" begin
-                        d1 = dim(codomain(t))
-                        d2 = dim(domain(t))
-                        # @test rank(t) ≈ min(d1, d2) # reduced to approx due to numerical F-symbols FIXME: fails sometimes for modules
-                        if isdiag # leftnull doesn't work for off-diagonal case
-                            M = leftnull(t)
-                            @test rank(M) ≈ max(d1, d2) - min(d1, d2) # reduced to approx
-                        end
-                        t2 = unitary(T, V1 ⊗ V2, V1 ⊗ V2)
-                        @test cond(t2) ≈ one(real(T))
-                        @test rank(t2) ≈ dim(V1 ⊗ V2) # reduced to approx
-                        t3 = randn(T, V1 ⊗ V2, V1 ⊗ V2)
-                        t3 = (t3 + t3') / 2
-                        vals = LinearAlgebra.eigvals(t3)
-                        λmax = maximum(s -> maximum(abs, s), values(vals))
-                        λmin = minimum(s -> minimum(abs, s), values(vals))
-                        @test cond(t3) ≈ λmax / λmin
-                    end
-                end
-
-                # how useful is this test? everything just works regardless of the space
-                @testset "empty tensor" begin
-                    t = randn(T, V1 ⊗ V2, zero(V1))
-                    @testset "leftorth with $alg" for alg in
-                                                    (TK.QR(), TK.QRpos(), TK.QL(), TK.QLpos(),
-                                                    TK.Polar(), TK.SVD(), TK.SDD())
-                        Q, R = @constinferred leftorth(t; alg=alg)
-                        @test Q == t
-                        @test dim(Q) == dim(R) == 0
-                    end
-                    @testset "leftnull with $alg" for alg in (TK.QR(), TK.SVD(), TK.SDD())
-                        N = @constinferred leftnull(t; alg=alg)
-                        @test N' * N ≈ id(domain(N))
-                        @test N * N' ≈ id(codomain(N))
-                    end
-                    @testset "rightorth with $alg" for alg in
-                                                    (TK.RQ(), TK.RQpos(), TK.LQ(),
-                                                        TK.LQpos(),
-                                                        TK.Polar(), TK.SVD(), TK.SDD())
-                        L, Q = @constinferred rightorth(copy(t'); alg=alg)
-                        @test Q == t'
-                        @test dim(Q) == dim(L) == 0
-                    end
-                    @testset "rightnull with $alg" for alg in (TK.LQ(), TK.SVD(), TK.SDD())
-                        M = @constinferred rightnull(copy(t'); alg=alg)
-                        @test M * M' ≈ id(codomain(M))
-                        @test M' * M ≈ id(domain(M))
-                    end
-                    @testset "tsvd with $alg" for alg in (TK.SVD(), TK.SDD())
-                        U, S, V = @constinferred tsvd(t; alg=alg)
-                        @test U == t
-                        @test dim(U) == dim(S) == dim(V)
-                    end
-                    @testset "cond and rank" begin
-                        @test rank(t) == 0
-                        W2 = zero(V1) * zero(V2)
-                        t2 = rand(W2, W2)
-                        @test rank(t2) == 0
-                        @test cond(t2) == 0.0
-                    end
-                end
-                t = rand(T, V1 ⊗ V2 ← V1 ⊗ V2)
-                @testset "eig and isposdef" begin
-                    D, V = eigen(t)
-                    @test t * V ≈ V * D
-
-                    d = LinearAlgebra.eigvals(t; sortby=nothing)
-                    d′ = LinearAlgebra.diag(D)
-                    for (c, b) in d
-                        @test b ≈ d′[c]
-                    end
-
-                    # Somehow moving these test before the previous one gives rise to errors
-                    # with T=Float32 on x86 platforms. Is this an OpenBLAS issue? 
-                    VdV = V' * V
-                    VdV = (VdV + VdV') / 2
-                    @test isposdef(VdV)
-
-                    @test !isposdef(t) # unlikely for non-hermitian map
-                    t2 = (t + t')
-                    D, V = eigen(t2)
-                    VdV = V' * V
-                    @test VdV ≈ one(VdV)
-                    D̃, Ṽ = @constinferred eigh(t2)
-                    @test D ≈ D̃
-                    @test V ≈ Ṽ
-                    λ = minimum(minimum(real(LinearAlgebra.diag(b)))
-                                for (c, b) in blocks(D))
-                    @test cond(Ṽ) ≈ one(real(T))
-                    @test isposdef(t2) == isposdef(λ)
-                    @test isposdef(t2 - λ * one(t2) + 0.1 * one(t2))
-                    @test !isposdef(t2 - λ * one(t2) - 0.1 * one(t2))
-                end
-            end
-        end
-
         @timedtestset "Tensor truncation" begin
             for T in (Float32, ComplexF64)
                 # Test both a normal tensor and an adjoint one.
@@ -1303,7 +1132,7 @@ end
             end
         end
 
-        @timedtestset "Tensor product: test via norm preservation" begin
+        @timedtestset "Tensor product: test via norm preservation" begin # OOMs over here with full spaces
             for T in (Float32, ComplexF64)
                 t1 = rand(T, V3 ⊗ V4 ⊗ V5 ← V1 ⊗ V2)
                 if all(a.i != a.j for a in blocksectors(t1))
@@ -1334,6 +1163,203 @@ end
                 end
                 t = @constinferred (t1 ⊗ t2)
                 @test t ≈ t′
+            end
+        end
+    end
+
+    # some fail for (2, 2), (3, 3), (6, 6)
+    # rightorth RQ(pos) and Polar (fail) for 2nd space
+    # leftorth with QL(pos) and Polar for 1st space
+    # leftnull QR for 1st space
+    # cond and rank leftnull for 1st space
+
+    # factorization tests require equal objects in blocksectors of domain and codomain, so just put them all
+    VC_all = fill(Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)), 5)
+
+    VM1_all = (Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM,
+        Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM,
+        Vect[I](one(I(j, j, 1)) => 1, rand_object(I, j, j) => 2)
+    )
+
+    VM2_all = (VM,
+        Vect[I](one(I(j, j, 1)) => 1, rand_object(I, j, j) => 1),
+        Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM,
+        Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 2)
+        )
+
+    fact_Vs = (i != j) ? (VM1_all, VM2_all) : (VC_all,)
+
+    @timedtestset "Factorization" for V in fact_Vs
+        V1, V2, V3, V4, V5 = V
+        WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' # old left permute resulted in this space
+        WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5' # old right permute
+        WmodR = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # new fusion order for right
+        WmodL = V1 ⊗ V2 ⊗ V5' ← V3 ⊗ V4 # new fusion order for left
+
+        isdiag = all(c.i == c.j for c in blocksectors(WmodR)) # this blocksectors call should always work #TODO: can't this just be i == j?
+        for T in (Float32, ComplexF64)
+            # Test both a normal tensor and an adjoint one.
+            # adjoint takes other space for shape of matrix in RQ(pos)
+            tsR = isdiag ? (rand(T, WR), rand(T, WL)') : (rand(T, WmodR), rand(T, WmodL)') # shape of matrices require different spaces for left/right
+            tsL = isdiag ? (rand(T, WL), rand(T, WR)') : (rand(T, WmodR), rand(T, WmodL)')
+            for t in tsR
+                @testset "rightorth with $alg" for alg in
+                                                (TK.RQ(), TK.RQpos(), TK.LQ(),
+                                                    TK.LQpos(),
+                                                    TK.Polar(), TK.SVD(), TK.SDD())
+                    (alg isa RQ || alg isa RQpos || alg isa Polar) && !isdiag && continue
+                    L, Q = @constinferred rightorth(t; alg=alg)
+                    QQd = Q * Q'
+                    @test QQd ≈ one(QQd)
+                    @test L * Q ≈ t
+                    if alg isa Polar
+                        @test isposdef(L)
+                        @test domain(L) == codomain(L) == space(t, 1) ⊗ space(t, 2)
+                    end
+                end
+                @testset "rightnull with $alg" for alg in (TK.LQ(), TK.SVD(), TK.SDD())
+                    M = @constinferred rightnull(t; alg=alg)
+                    MMd = M * M'
+                    @test MMd ≈ one(MMd)
+                    @test norm(t * M') < 100 * eps(norm(t))
+                end
+            end
+            # adjoints take other space for shape of matrix in QL(pos)
+            for t in tsL
+                @testset "leftorth with $alg" for alg in
+                                                (TK.QR(), TK.QRpos(), TK.QL(), TK.QLpos(),
+                                                TK.Polar(), TK.SVD(), TK.SDD())
+                    # skip QL because the monomorphism condition is hard to satisfy for off-diagonal case
+                    # have to skip Polar as well as all tests fail with modules
+                    (alg isa QL || alg isa QLpos || alg isa Polar) && !isdiag && continue
+                    Q, R = @constinferred leftorth(t; alg=alg)
+                    QdQ = Q' * Q
+                    @test QdQ ≈ one(QdQ)
+                    @test Q * R ≈ t
+                    if alg isa Polar
+                        @test isposdef(R) # this fails with modules
+                        @test domain(R) == codomain(R) == space(t, 4)' ⊗ space(t, 5)' # this as well
+                    end
+                end
+                @testset "leftnull with $alg" for alg in
+                                                (TK.QR(), TK.SVD(), TK.SDD())
+                    # less rows than columns so either fails or no data in off-diagonal case
+                    !isdiag && continue
+                    N = @constinferred leftnull(t; alg=alg)
+                    NdN = N' * N
+                    @test NdN ≈ one(NdN)
+                    @test norm(N' * t) < 100 * eps(norm(t))
+                end
+                @testset "tsvd with $alg" for alg in (TK.SVD(), TK.SDD())
+                    U, S, V = @constinferred tsvd(t; alg=alg)
+                    UdU = U' * U
+                    @test UdU ≈ one(UdU)
+                    VVd = V * V'
+                    @test VVd ≈ one(VVd)
+                    @test U * S * V ≈ t
+
+                    s = LinearAlgebra.svdvals(t)
+                    s′ = LinearAlgebra.diag(S)
+                    for (c, b) in s
+                        @test b ≈ s′[c]
+                    end
+                end
+                # cond and rank tests were here
+                @testset "cond and rank" begin
+                    d1 = dim(codomain(t))
+                    d2 = dim(domain(t))
+                    @test rank(t) ≈ min(d1, d2) # reduced to approx
+                    if isdiag # leftnull doesn't work for off-diagonal case
+                        M = leftnull(t)
+                        @test rank(M) ≈ max(d1, d2) - min(d1, d2) # reduced to approx
+                    end
+                    t2 = unitary(T, V1 ⊗ V2, V1 ⊗ V2)
+                    @test cond(t2) ≈ one(real(T))
+                    @test rank(t2) ≈ dim(V1 ⊗ V2) # reduced to approx
+                    t3 = randn(T, V1 ⊗ V2, V1 ⊗ V2)
+                    t3 = (t3 + t3') / 2
+                    vals = LinearAlgebra.eigvals(t3)
+                    λmax = maximum(s -> maximum(abs, s), values(vals))
+                    λmin = minimum(s -> minimum(abs, s), values(vals))
+                    @test cond(t3) ≈ λmax / λmin
+                end
+            end
+
+            # how useful is this test? everything just works regardless of the space
+            @testset "empty tensor" begin
+                t = randn(T, V1 ⊗ V2, zero(V1))
+                @testset "leftorth with $alg" for alg in
+                                                (TK.QR(), TK.QRpos(), TK.QL(), TK.QLpos(),
+                                                TK.Polar(), TK.SVD(), TK.SDD())
+                    Q, R = @constinferred leftorth(t; alg=alg)
+                    @test Q == t
+                    @test dim(Q) == dim(R) == 0
+                end
+                @testset "leftnull with $alg" for alg in (TK.QR(), TK.SVD(), TK.SDD())
+                    N = @constinferred leftnull(t; alg=alg)
+                    @test N' * N ≈ id(domain(N))
+                    @test N * N' ≈ id(codomain(N))
+                end
+                @testset "rightorth with $alg" for alg in
+                                                (TK.RQ(), TK.RQpos(), TK.LQ(),
+                                                    TK.LQpos(),
+                                                    TK.Polar(), TK.SVD(), TK.SDD())
+                    L, Q = @constinferred rightorth(copy(t'); alg=alg)
+                    @test Q == t'
+                    @test dim(Q) == dim(L) == 0
+                end
+                @testset "rightnull with $alg" for alg in (TK.LQ(), TK.SVD(), TK.SDD())
+                    M = @constinferred rightnull(copy(t'); alg=alg)
+                    @test M * M' ≈ id(codomain(M))
+                    @test M' * M ≈ id(domain(M))
+                end
+                @testset "tsvd with $alg" for alg in (TK.SVD(), TK.SDD())
+                    U, S, V = @constinferred tsvd(t; alg=alg)
+                    @test U == t
+                    @test dim(U) == dim(S) == dim(V)
+                end
+                @testset "cond and rank" begin
+                    @test rank(t) == 0
+                    W2 = zero(V1) * zero(V2)
+                    t2 = rand(W2, W2)
+                    @test rank(t2) == 0
+                    @test cond(t2) == 0.0
+                end
+            end
+            t = rand(T, V1 ⊗ V2 ← V1 ⊗ V2)
+            @testset "eig and isposdef" begin
+                D, V = eigen(t)
+                @test t * V ≈ V * D
+
+                d = LinearAlgebra.eigvals(t; sortby=nothing)
+                d′ = LinearAlgebra.diag(D)
+                for (c, b) in d
+                    @test b ≈ d′[c]
+                end
+
+                # Somehow moving these test before the previous one gives rise to errors
+                # with T=Float32 on x86 platforms. Is this an OpenBLAS issue? 
+                VdV = V' * V
+                VdV = (VdV + VdV') / 2
+                @test isposdef(VdV)
+
+                @test !isposdef(t) # unlikely for non-hermitian map
+                t2 = (t + t')
+                D, V = eigen(t2)
+                VdV = V' * V
+                @test VdV ≈ one(VdV)
+                D̃, Ṽ = @constinferred eigh(t2)
+                @test D ≈ D̃
+                @test V ≈ Ṽ
+                λ = minimum(minimum(real(LinearAlgebra.diag(b)))
+                            for (c, b) in blocks(D))
+                @test cond(Ṽ) ≈ one(real(T))
+                @test isposdef(t2) == isposdef(λ)
+                @test isposdef(t2 - λ * one(t2) + 0.1 * one(t2))
+                @test !isposdef(t2 - λ * one(t2) - 0.1 * one(t2))
             end
         end
     end
