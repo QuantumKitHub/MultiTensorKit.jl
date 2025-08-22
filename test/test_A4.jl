@@ -838,7 +838,7 @@ end
 # no permute tests: NoBraiding()
 
 @timedtestset "Tensors with symmetry involving $Istr ($i, $j)" verbose = true for i in 1:r, j in 1:r
-    #TODO: refactor isdiag check
+    isdiag = i == j
 
     VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
                 Vect[I](one(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),   # avoids OOMs?
@@ -863,12 +863,12 @@ end
             Vect[I](one(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
     )
 
-    Vcol = i != j ? (VM1, VM2) : (VC,) # avoid duplicate runs
+    Vcol = isdiag ? (VC,) : (VM1, VM2)  # avoid duplicate runs
 
     for V in Vcol # TODO: add enumerate to keep track of potential erroring space
         V1, V2, V3, V4, V5 = V
         @timedtestset "Basic tensor properties" begin
-            W = i == j ? V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5 : V3 ⊗ V4 ⊗ V5 # fusion matters
+            W = isdiag ? V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5 : V3 ⊗ V4 ⊗ V5 # fusion matters
             for T in (Int, Float32, Float64, ComplexF32, ComplexF64, BigFloat)
                 t = @constinferred zeros(T, W) # empty for i != j b/c blocks are module-graded
                 @test @constinferred(hash(t)) == hash(deepcopy(t))
@@ -1150,7 +1150,6 @@ end
         @timedtestset "Tensor product: test via tensor contraction" begin
             # W = V3 ⊗ V4 ⊗ V5 ← V1 ⊗ V2
             W = V4 ← V1 ⊗ V2 # less costly
-            isdiag = all(a.i == a.j for a in blocksectors(W))
             for T in (Float32, ComplexF64)
                 if !isdiag
                     t1 = rand(T, W)
@@ -1196,12 +1195,12 @@ end
 
     @timedtestset "Factorization" for V in fact_Vs
         V1, V2, V3, V4, V5 = V
+        # TODO: try ifelse/?: here
         WL = V3 ⊗ V4 ⊗ V2 ← V1' ⊗ V5' # old left permute resulted in this space
         WR = V3 ⊗ V4 ← V2' ⊗ V1' ⊗ V5' # old right permute
         WmodR = V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 # new fusion order for right
         WmodL = V1 ⊗ V2 ⊗ V5' ← V3 ⊗ V4 # new fusion order for left
 
-        isdiag = all(c.i == c.j for c in blocksectors(WmodR)) # this blocksectors call should always work #TODO: can't this just be i == j?
         for T in (Float32, ComplexF64)
             # Test both a normal tensor and an adjoint one.
             # adjoint takes other space for shape of matrix in RQ(pos)
