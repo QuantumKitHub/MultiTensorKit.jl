@@ -37,16 +37,16 @@ Base.size(::Type{A4Object}) = 7
 
 Base.IteratorSize(::Type{<:SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 
-# TODO: generalize?
-function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
-    s = size(A4Object)
+function Base.iterate(iter::SectorValues{<:BimoduleSector}, (I, label)=(1, 1))
+    A = eltype(iter)
+    s = size(A)
     I > s * s && return nothing
     i, j = CartesianIndices((s, s))[I].I
-    maxlabel = _numlabels(A4Object, i, j)
+    maxlabel = _numlabels(A, i, j)
     return if label > maxlabel
         iterate(iter, (I + 1, 1))
     else
-        A4Object(i, j, label), (I, label + 1)
+        A(i, j, label), (I, label + 1)
     end
 end
 
