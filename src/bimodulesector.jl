@@ -1,14 +1,19 @@
+const ImplementedBimoduleSectors = [:A4]
+
 struct BimoduleSector{Name} <: Sector
     i::Int
     j::Int
     label::Int
-    function BimoduleSector{:A4}(i::Int, j::Int, label::Int)
-        i <= size(BimoduleSector{:A4}) && j <= size(BimoduleSector{:A4}) ||
-            throw(DomainError("object outside the matrix A4"))
-        return label <= _numlabels(BimoduleSector{:A4}, i, j) ? new{:A4}(i, j, label) :
-               throw(DomainError("label outside category A4($i, $j)"))
+    function BimoduleSector{Name}(i::Int, j::Int, label::Int) where {Name}
+        Name ∈ ImplementedBimoduleSectors ||
+            throw(ArgumentError("BimoduleSector $Name not implemented"))
+        i <= size(BimoduleSector{Name}) && j <= size(BimoduleSector{Name}) ||
+            throw(DomainError("object outside the matrix $Name"))
+        return label <= _numlabels(BimoduleSector{Name}, i, j) ? new{Name}(i, j, label) :
+               throw(DomainError("label outside category $Name($i, $j)"))
     end
 end
+
 BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
 const A4Object = BimoduleSector{:A4}
 
