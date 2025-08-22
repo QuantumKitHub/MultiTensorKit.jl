@@ -263,8 +263,10 @@ println("---------------------------------")
                     Vect[I](c => 1 for c in sectors(V) if rightone(c) == ur == leftone(c) || (c.i == i && c.j == j))
                 @test @constinferred(⊕(Wleft, WMop)) ==
                     Vect[I](c => 1 for c in sectors(V) if rightone(c) == ul == leftone(c) || (c.i == j && c.j == i))
-                @test @constinferred(fuse(Wleft, WM)) == Vect[I](c => dim(Wleft) for c in sectors(WM)) # this might be wrong
-                @test @constinferred(fuse(Wright, WMop)) == Vect[I](c => dim(Wright) for c in sectors(WMop)) # same
+                # round needed below because of numerical F-symbols not being integer when they should be
+                # although this test might be stupid, because I'm assuming integer qdims bc everything's a group or irrep on the diagonal
+                @test @constinferred(fuse(Wleft, WM)) == Vect[I](c => round(Int, dim(Wleft)) for c in sectors(WM)) # this might be wrong
+                @test @constinferred(fuse(Wright, WMop)) == Vect[I](c => round(Int, dim(Wright)) for c in sectors(WMop)) # same
 
                 # less sensible fuse
                 @test @constinferred(fuse(Wleft, WMop)) == fuse(Wright, WM) ==
