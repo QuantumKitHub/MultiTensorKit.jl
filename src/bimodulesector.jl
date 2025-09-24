@@ -282,6 +282,7 @@ end
 #-----------------------------------------
 
 #TODO: generalise
+# is this blocksectors necessary with the productspace one?
 function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
          {S<:Union{Vect[A4Object],
                    SumSpace{Vect[A4Object]}},N₁,N₂}
@@ -303,6 +304,28 @@ function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
         return filter!(c -> hasblock(dom, c), collect(blocksectors(codom)))
     end
 end
+
+#TODO: generalise
+# function TensorKit.blocksectors(P::ProductSpace{S,N}) where {S<:Union{Vect[A4Object],SumSpace{Vect[A4Object]}},N}
+#     I = sectortype(S) # currently just A4Object
+#     bs = Vector{I}()
+#     if N == 0
+#         return I[one(I(i, i, 1)) for i in 1:size(I)]
+#     elseif N == 1
+#         for s in sectors(P)
+#             push!(bs, first(s))
+#         end
+#     else
+#         for s in sectors(P)
+#             for c in ⊗(s...)
+#                 if !(c in bs)
+#                     push!(bs, c)
+#                 end
+#             end
+#         end
+#     end
+#     return sort!(bs)
+# end
 
 function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
     T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
@@ -334,11 +357,11 @@ end
 
 function Base.oneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     @assert !isempty(S) "Cannot determine type of empty space"
-    return SumSpace(oneunit(first(S.spaces)))
+    return SumSpace(oneunit(first(S.spaces))) # assuming diagonal SumSpace (like in MPSKit)
 end
 
 # oneunit for spaces whose elements all belong to the same sector
-function TensorKit.rightoneunit(S::GradedSpace{<:BimoduleSector})
+function rightoneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.j for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S do not have the same rightone"))
 
@@ -346,12 +369,12 @@ function TensorKit.rightoneunit(S::GradedSpace{<:BimoduleSector})
     return spacetype(S)(sector => 1)
 end
 
-function TensorKit.rightoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+function rightoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     @assert !isempty(S) "Cannot determine type of empty space"
     return SumSpace(rightoneunit(first(S.spaces)))
 end
 
-function TensorKit.leftoneunit(S::GradedSpace{<:BimoduleSector})
+function leftoneunit(S::GradedSpace{<:BimoduleSector})
     allequal(a.i for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S do not have the same leftone"))
 
@@ -359,7 +382,7 @@ function TensorKit.leftoneunit(S::GradedSpace{<:BimoduleSector})
     return spacetype(S)(sector => 1)
 end
 
-function TensorKit.leftoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+function leftoneunit(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     @assert !isempty(S) "Cannot determine type of empty space"
     return SumSpace(leftoneunit(first(S.spaces)))
 end
