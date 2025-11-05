@@ -191,6 +191,11 @@ end
 
 # Base.isone(a::BimoduleSector) = leftone(a) == a == rightone(a)
 
+function TensorKitSectors.allunits(::Type{I}) where {I <: BimoduleSector}
+    s = size(I)
+    return I[I(i, i, _get_dual_cache(I)[1][i]) for i in 1:s]
+end
+
 function TensorKitSectors.unit(::Type{<:BimoduleSector})
     throw(ArgumentError("one of Type BimoduleSector doesn't exist"))
 end
@@ -203,7 +208,7 @@ function TensorKitSectors.rightunit(a::BimoduleSector)
     return typeof(a)(a.j, a.j, _get_dual_cache(typeof(a))[1][a.j])
 end
 
-function Base.conj(a::BimoduleSector)
+function TensorKitSectors.dual(a::BimoduleSector)
     return typeof(a)(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i, a.j][a.label])
 end
 
@@ -345,6 +350,8 @@ function TensorKit.fuse(V₁::GradedSpace{I}, V₂::GradedSpace{I}) where {I<:Bi
     return typeof(V₁)(dims)
 end
 
+#TODO: these might not be necessary anymore after TensorKit#291
+
 # limited unitspace
 function TensorKit.unitspace(S::GradedSpace{<:BimoduleSector})
     allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
@@ -387,7 +394,8 @@ function leftunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
     return SumSpace(leftunitspace(first(S.spaces)))
 end
 
-function TensorKit.insertrightunitspace(P::ProductSpace{V,N}, ::Val{i};
+
+function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i};
                                    conj::Bool=false,
                                    dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
     i > N && error("cannot insert a sensible right unit onto $P at index $(i+1)")
@@ -403,7 +411,7 @@ function TensorKit.insertrightunitspace(P::ProductSpace{V,N}, ::Val{i};
 end
 
 # possible TODO: overwrite defaults at level of HomSpace and TensorMap?
-function TensorKit.insertleftunitspace(P::ProductSpace{V,N}, ::Val{i}; # want no defaults?
+function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}; # want no defaults?
                                   conj::Bool=false,
                                   dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
     i > N && error("cannot insert a sensible left unit onto $P at index $i") # do we want this to error in the diagonal case?
