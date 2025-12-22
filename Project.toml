@@ -5,7 +5,6 @@ version = "0.1.0"
 
 [deps]
 Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
-BlockTensorKit = "5f87ffc2-9cf1-4a46-8172-465d160bd8cd"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 TensorKit = "07d1fe3e-3e46-537d-9eac-e9e13d0d4cec"
 TensorKitSectors = "13a9c161-d5da-41f0-bcbd-e1a08ae0647f"
@@ -14,7 +13,6 @@ TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 [compat]
 Aqua = "0.8.9"
 Artifacts = "1.10, 1"
-BlockTensorKit = "0.3"
 DelimitedFiles = "1.9"
 Random = "1.11.0"
 SafeTestsets = "0.1"
