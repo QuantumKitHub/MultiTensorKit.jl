@@ -9,9 +9,6 @@ using TensorKitSectors
 using TupleTools
 using TupleTools: insertafter
 
-using BlockTensorKit
-import BlockTensorKit: SumSpace
-
 using TensorKit
 import TensorKit: hasblock, dim
 
