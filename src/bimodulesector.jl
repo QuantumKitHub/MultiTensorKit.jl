@@ -136,8 +136,8 @@ function extract_dual(::Type{I}) where {I <: BimoduleSector}
     map(1:ncats) do i
         Niii = N[i, i, i]
         nobji = maximum(first, keys(N[i, i, i]))
-        # want to return a leftone and rightone for each entry in multifusion cat
-        # leftone/rightone needs to at least be the unit object within a fusion cat
+        # want to return a leftunit and rightunit for each entry in multifusion cat
+        # leftunit/rightunit needs to at least be the unit object within a fusion cat
         Is[i] = findfirst(1:nobji) do a
             get(Niii, (a, a, a), 0) == 1 || return false # I x I -> I
             for othera in 1:nobji
@@ -145,19 +145,19 @@ function extract_dual(::Type{I}) where {I <: BimoduleSector}
                 get(Niii, (a, othera, othera), 0) == 1 || return false # I x a -> a
             end
 
-            # check leftone
+            # check leftunit
             map(1:ncats) do j
                 nobjj = maximum(first, keys(N[j, j, j]))
                 for b in 1:nobjj
-                    get(N[i, j, j], (a, b, b), 0) == 1 || return false # I = leftone(b)
+                    get(N[i, j, j], (a, b, b), 0) == 1 || return false # I = leftunit(b)
                 end
             end
 
-            # check rightone
+            # check rightunit
             map(1:ncats) do k
                 nobjk = maximum(first, keys(N[k, k, k]))
                 for c in 1:nobjk
-                    get(N[k, i, k], (c, a, c), 0) == 1 || return false # I = rightone(c)
+                    get(N[k, i, k], (c, a, c), 0) == 1 || return false # I = rightunit(c)
                 end
             end
             return true
@@ -175,8 +175,8 @@ function extract_dual(::Type{I}) where {I <: BimoduleSector}
             Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> C_ii
             Njij = N[j, i, j] # 𝒞_ji x 𝒞_ij -> C_jj
             for i_ob in 1:nobji, j_ob in 1:nobjj
-                get(Niji, (i_ob, j_ob, Is[i]), 0) == 1 || continue # leftone(c_ij) ∈ c_ij x c_ji
-                get(Njij, (j_ob, i_ob, Is[j]), 0) == 1 || continue # rightone(c_ij) ∈ c_ji x c_ij
+                get(Niji, (i_ob, j_ob, Is[i]), 0) == 1 || continue # leftunit(c_ij) ∈ c_ij x c_ji
+                get(Njij, (j_ob, i_ob, Is[j]), 0) == 1 || continue # rightunit(c_ij) ∈ c_ji x c_ij
                 push!(allduals[i, j], j_ob)
             end
         end
@@ -189,15 +189,13 @@ function TensorKitSectors.unit(a::BimoduleSector)
     return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
-# Base.isone(a::BimoduleSector) = leftone(a) == a == rightone(a)
-
 function TensorKitSectors.allunits(::Type{I}) where {I <: BimoduleSector}
     s = size(I)
     return I[I(i, i, _get_dual_cache(I)[1][i]) for i in 1:s]
 end
 
 function TensorKitSectors.unit(::Type{<:BimoduleSector})
-    throw(ArgumentError("one of Type BimoduleSector doesn't exist"))
+    throw(ArgumentError("unit of Type BimoduleSector doesn't exist"))
 end
 
 function TensorKitSectors.leftunit(a::BimoduleSector)
@@ -286,59 +284,7 @@ end
 # interface with TensorKit where necessary
 #-----------------------------------------
 
-#TODO: generalise
-# is this blocksectors necessary with the productspace one?
-function TensorKit.blocksectors(W::TensorMapSpace{S,N₁,N₂}) where
-         {S<:Union{Vect[A4Object],
-                   SumSpace{Vect[A4Object]}},N₁,N₂}
-    codom = codomain(W)
-    dom = domain(W)
-    if N₁ == 0 && N₂ == 0 # 0x0-dimensional TensorMap is just a scalar, return all units
-        # this is a problem in full contractions where the coloring outside is 𝒞
-        return NTuple{size(A4Object),A4Object}(one(A4Object(i, i, 1))
-                                               for i in 1:size(A4Object)) # have to return all units b/c no info on W in this case
-    elseif N₁ == 0
-        @assert N₂ != 0 "one of Type A4Object doesn't exist"
-        return filter!(isone, collect(blocksectors(dom)))
-    elseif N₂ == 0
-        @assert N₁ != 0 "one of Type A4Object doesn't exist"
-        return filter!(isone, collect(blocksectors(codom)))
-    elseif N₂ <= N₁ # keep intersection
-        return filter!(c -> hasblock(codom, c), collect(blocksectors(dom)))
-    else
-        return filter!(c -> hasblock(dom, c), collect(blocksectors(codom)))
-    end
-end
-
-#TODO: generalise
-# function TensorKit.blocksectors(P::ProductSpace{S,N}) where {S<:Union{Vect[A4Object],SumSpace{Vect[A4Object]}},N}
-#     I = sectortype(S) # currently just A4Object
-#     bs = Vector{I}()
-#     if N == 0
-#         return I[one(I(i, i, 1)) for i in 1:size(I)]
-#     elseif N == 1
-#         for s in sectors(P)
-#             push!(bs, first(s))
-#         end
-#     else
-#         for s in sectors(P)
-#             for c in ⊗(s...)
-#                 if !(c in bs)
-#                     push!(bs, c)
-#                 end
-#             end
-#         end
-#     end
-#     return sort!(bs)
-# end
-
-function TensorKit.dim(V::GradedSpace{<:BimoduleSector})
-    T = Base.promote_op(*, Int, real(sectorscalartype(sectortype(V))))
-    return reduce(+, dim(V, c) * dim(c) for c in sectors(V); init=zero(T))
-end
-
-Base.zero(S::Type{<:GradedSpace{<:BimoduleSector}}) = S()
-
+# TODO: can remove this once the otimes assert is removed
 function TensorKit.fuse(V₁::GradedSpace{I}, V₂::GradedSpace{I}) where {I<:BimoduleSector}
     dims = TensorKit.SectorDict{I,Int}()
     for a in sectors(V₁), b in sectors(V₂)
@@ -351,100 +297,19 @@ function TensorKit.fuse(V₁::GradedSpace{I}, V₂::GradedSpace{I}) where {I<:Bi
 end
 
 #TODO: these might not be necessary anymore after TensorKit#291
+# check after BlockTensorKit#38
 
-# limited unitspace
-function TensorKit.unitspace(S::GradedSpace{<:BimoduleSector})
-    allequal(a.i for a in sectors(S)) && allequal(a.j for a in sectors(S)) ||
-        throw(ArgumentError("sectors of $S are not all equal"))
-    first(sectors(S)).i == first(sectors(S)).j ||
-        throw(ArgumentError("sectors of $S are non-diagonal"))
-    sector = one(first(sectors(S)))
-    return spacetype(S)(sector => 1)
-end
+# function TensorKit.unitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+#     @assert !isempty(S) "Cannot determine type of empty space"
+#     return SumSpace(oneunit(first(S.spaces))) # assuming diagonal SumSpace (like in MPSKit)
+# end
 
-function TensorKit.unitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-    @assert !isempty(S) "Cannot determine type of empty space"
-    return SumSpace(oneunit(first(S.spaces))) # assuming diagonal SumSpace (like in MPSKit)
-end
+# function rightunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+#     @assert !isempty(S) "Cannot determine type of empty space"
+#     return SumSpace(rightunitspace(first(S.spaces)))
+# end
 
-# oneunit for spaces whose elements all belong to the same sector
-function rightunitspace(S::GradedSpace{<:BimoduleSector})
-    allequal(a.j for a in sectors(S)) ||
-        throw(ArgumentError("sectors of $S do not have the same rightunit"))
-
-    sector = rightunit(first(sectors(S)))
-    return spacetype(S)(sector => 1)
-end
-
-function rightunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-    @assert !isempty(S) "Cannot determine type of empty space"
-    return SumSpace(rightunitspace(first(S.spaces)))
-end
-
-function leftunitspace(S::GradedSpace{<:BimoduleSector})
-    allequal(a.i for a in sectors(S)) ||
-        throw(ArgumentError("sectors of $S do not have the same leftunit"))
-
-    sector = leftunit(first(sectors(S)))
-    return spacetype(S)(sector => 1)
-end
-
-function leftunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-    @assert !isempty(S) "Cannot determine type of empty space"
-    return SumSpace(leftunitspace(first(S.spaces)))
-end
-
-
-function TensorKit.insertrightunit(P::ProductSpace{V,N}, ::Val{i};
-                                   conj::Bool=false,
-                                   dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
-    i > N && error("cannot insert a sensible right unit onto $P at index $(i+1)")
-    # possible change to rightunit of correct space for N = 0
-    u = N > 0 ? rightunitspace(P[i]) : error("no unit object in $P")
-    if dual
-        u = TensorKit.dual(u)
-    end
-    if conj
-        u = TensorKit.conj(u)
-    end
-    return ProductSpace(TupleTools.insertafter(P.spaces, i, (u,)))
-end
-
-# possible TODO: overwrite defaults at level of HomSpace and TensorMap?
-function TensorKit.insertleftunit(P::ProductSpace{V,N}, ::Val{i}; # want no defaults?
-                                  conj::Bool=false,
-                                  dual::Bool=false) where {i,V<:GradedSpace{I},N} where {I<:BimoduleSector}
-    i > N && error("cannot insert a sensible left unit onto $P at index $i") # do we want this to error in the diagonal case?
-    u = N > 0 ? leftunitspace(P[i]) : error("no unit object in $P")
-    if dual
-        u = TensorKit.dual(u)
-    end
-    if conj
-        u = TensorKit.conj(u)
-    end
-    return ProductSpace(TupleTools.insertafter(P.spaces, i - 1, (u,)))
-end
-
-function TensorKit.scalar(t::AbstractTensorMap{T,S,0,0}) where {T,
-                                                                S<:GradedSpace{<:BimoduleSector}}
-    Bs = collect(blocks(t))
-    inds = findall(!iszero ∘ last, Bs)
-    isempty(inds) && return zero(scalartype(t))
-    return only(last(Bs[only(inds)]))
-end
-
-# is this even necessary? can let it error at TensorKit fusiontrees.jl:93 from the one(<:BimoduleSector) call
-# but these errors are maybe more informative
-function TensorKit.FusionTree(uncoupled::Tuple{<:I,Vararg{I}}) where {I<:BimoduleSector}
-    coupled = collect(⊗(uncoupled...))
-    if length(coupled) == 0 # illegal fusion somewhere
-        throw(ArgumentError("Forbidden fusion with uncoupled sectors $uncoupled"))
-    else # allowed fusions require inner lines
-        error("fusion tree requires inner lines if `FusionStyle(I) <: MultipleFusion`")
-    end
-end
-
-# this one might also be overkill, since `FusionTreeIterator`s don't check whether the fusion is allowed
-function TensorKit.fusiontrees(uncoupled::Tuple{I,Vararg{I}}) where {I<:BimoduleSector}
-    return throw(ArgumentError("coupled sector must be provided for $I fusion"))
-end
+# function leftunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
+#     @assert !isempty(S) "Cannot determine type of empty space"
+#     return SumSpace(leftunitspace(first(S.spaces)))
+# end
