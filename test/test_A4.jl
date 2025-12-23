@@ -163,7 +163,7 @@ end
     objects = collect(values(I))
     for a in objects, b in objects
         a.j == b.i || continue # skip if not compatible
-        @test triangle_equation(a, b; atol=1e-12, rtol=1e-12)
+        @test triangle_equation(a, b; atol = 1.0e-12, rtol = 1.0e-12)
     end
 end
 
@@ -176,7 +176,7 @@ end
                 b.j == c.i || continue # skip if not compatible
                 for d in objects
                     c.j == d.i || continue # skip if not compatible
-                    @test pentagon_equation(a, b, c, d; atol=1e-12, rtol=1e-12)
+                    @test pentagon_equation(a, b, c, d; atol = 1.0e-12, rtol = 1.0e-12)
                 end
             end
         end
@@ -303,7 +303,7 @@ println("---------------------------------")
             end
         end
 
-        d = Dict{I,Int}()
+        d = Dict{I, Int}()
         for a in sectors(V), b in sectors(V)
             a.j == b.i || continue # skip if not compatible
             for c in a ⊗ b
@@ -312,7 +312,7 @@ println("---------------------------------")
         end
         @test @constinferred(fuse(V, V)) == GradedSpace(d)
         @test @constinferred(flip(V)) ==
-              Vect[I](conj(c) => dim(V, c) for c in sectors(V))'
+            Vect[I](conj(c) => dim(V, c) for c in sectors(V))'
         @test flip(V) ≅ V
         @test flip(V) ≾ V
         @test flip(V) ≿ V
@@ -328,11 +328,13 @@ println("---------------------------------")
     end
 
     @timedtestset "HomSpace with $(TK.type_repr(Vect[I])) involving ($i, $j)" for i in 1:r, j in 1:r
-        V1, V2, V3, V4, V5 = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-        Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)),
-        Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)), # same as V1
-        Vect[I]((i, j, 1) => 3),
-        Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)))
+        V1, V2, V3, V4, V5 = (
+            Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+            Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)),
+            Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)), # same as V1
+            Vect[I]((i, j, 1) => 3),
+            Vect[I]((j, j, label) => 1 for label in 1:MTK._numlabels(I, j, j)),
+        )
         W = HomSpace(V1 ⊗ V2, V3 ⊗ V4 ⊗ V5)
 
         @test W == (V3 ⊗ V4 ⊗ V5 → V1 ⊗ V2)
@@ -362,9 +364,9 @@ println("---------------------------------")
         @test_throws BoundsError insertleftunit(W, 0)
 
         @test (V1 ⊗ V2 ⊗ rightunitspace(V2) ← V3 ⊗ V4 ⊗ V5) ==
-                @constinferred(insertrightunit(W, 2))
+            @constinferred(insertrightunit(W, 2))
         @test (V1 ⊗ V2 ← leftunitspace(V3) ⊗ V3 ⊗ V4 ⊗ V5) ==
-                @constinferred(insertleftunit(W, 3))
+            @constinferred(insertleftunit(W, 3))
         @test @constinferred(removeunit(insertleftunit(W, 3), 3)) == W
         @test_throws ArgumentError @constinferred(insertrightunit(one(V1) ← V1, 0)) # should I specify it's the other error?
         @test_throws ArgumentError insertleftunit(one(V1) ← V1, 0)
@@ -470,7 +472,7 @@ println("---------------------------------------")
         end
     end
     # no planar trace tests
-    
+
     @testset "Fusion tree $Istr: elementary artin braid" begin
         N = length(out)
         isdual = ntuple(n -> rand(Bool), N)
@@ -488,14 +490,14 @@ println("---------------------------------------")
         d1 = d2
         d2 = empty(d1)
         for (f1, coeff1) in d1
-            for (f2, coeff2) in TK.artin_braid(f1, 3; inv=true)
+            for (f2, coeff2) in TK.artin_braid(f1, 3; inv = true)
                 d2[f2] = get(d2, f2, zero(coeff1)) + coeff2 * coeff1
             end
         end
         d1 = d2
         d2 = empty(d1)
         for (f1, coeff1) in d1
-            for (f2, coeff2) in TK.artin_braid(f1, 2; inv=true)
+            for (f2, coeff2) in TK.artin_braid(f1, 2; inv = true)
                 d2[f2] = get(d2, f2, zero(coeff1)) + coeff2 * coeff1
             end
         end
@@ -504,7 +506,7 @@ println("---------------------------------------")
             if f1 == f
                 @test coeff1 ≈ 1
             else
-                @test isapprox(coeff1, 0; atol=1.0e-12, rtol=1.0e-12)
+                @test isapprox(coeff1, 0; atol = 1.0e-12, rtol = 1.0e-12)
             end
         end
     end
@@ -529,9 +531,11 @@ println("---------------------------------------")
         f2 = rand(collect(fusiontrees(out2, in2)))
 
 
-        @test dim(in1) * dim(in2) ≈ sum(abs2(coeff) * dim(c) for c in in1 ⊗ in2
-                                        for μ in 1:Nsymbol(in1, in2, c)
-                                        for (f, coeff) in TK.merge(f1, f2, c, μ))
+        @test dim(in1) * dim(in2) ≈ sum(
+            abs2(coeff) * dim(c) for c in in1 ⊗ in2
+                for μ in 1:Nsymbol(in1, in2, c)
+                for (f, coeff) in TK.merge(f1, f2, c, μ)
+        )
         # no merge and braid interplay tests
     end
 
@@ -554,8 +558,8 @@ println("---------------------------------------")
         for n in 0:(2 * N)
             d = @constinferred TK.repartition(f1, f2, $n)
             @test dim(incoming) ≈
-                  sum(abs2(coef) * dim(f1.coupled) for ((f1, f2), coef) in d)
-            d2 = Dict{typeof((f1, f2)),valtype(d)}()
+                sum(abs2(coef) * dim(f1.coupled) for ((f1, f2), coef) in d)
+            d2 = Dict{typeof((f1, f2)), valtype(d)}()
             for ((f1′, f2′), coeff) in d
                 for ((f1′′, f2′′), coeff2) in TK.repartition(f1′, f2′, N)
                     d2[(f1′′, f2′′)] = get(d2, (f1′′, f2′′), zero(coeff)) + coeff2 * coeff
@@ -565,7 +569,7 @@ println("---------------------------------------")
                 if f1 == f1′ && f2 == f2′
                     @test coeff2 ≈ 1
                 else
-                    @test isapprox(coeff2, 0; atol=1.0e-12, rtol=1.0e-12)
+                    @test isapprox(coeff2, 0; atol = 1.0e-12, rtol = 1.0e-12)
                 end
             end
         end
@@ -586,8 +590,8 @@ println("---------------------------------------")
 
             d = @constinferred transpose(f1, f2, p1, p2)
             @test dim(incoming) ≈
-                  sum(abs2(coef) * dim(f1.coupled) for ((f1, f2), coef) in d)
-            d2 = Dict{typeof((f1, f2)),valtype(d)}()
+                sum(abs2(coef) * dim(f1.coupled) for ((f1, f2), coef) in d)
+            d2 = Dict{typeof((f1, f2)), valtype(d)}()
             for ((f1′, f2′), coeff) in d
                 d′ = transpose(f1′, f2′, ip1, ip2)
                 for ((f1′′, f2′′), coeff2) in d′
@@ -603,16 +607,18 @@ println("---------------------------------------")
             end
         end
     end
-    
+
     @testset "Double fusion tree $Istr: planar trace" begin
         d1 = transpose(f1, f1, (N + 1, 1:N..., ((2N):-1:(N + 3))...), (N + 2,))
         f1front, = TK.split(f1, N - 1)
         T = sectorscalartype(I)
-        d2 = Dict{typeof((f1front, f1front)),T}()
+        d2 = Dict{typeof((f1front, f1front)), T}()
         for ((f1′, f2′), coeff′) in d1
             for ((f1′′, f2′′), coeff′′) in
-                TK.planar_trace(f1′, f2′, (2:N...,), (1, ((2N):-1:(N + 3))...), (N + 1,),
-                                (N + 2,))
+                TK.planar_trace(
+                    f1′, f2′, (2:N...,), (1, ((2N):-1:(N + 3))...), (N + 1,),
+                    (N + 2,)
+                )
                 coeff = coeff′ * coeff′′
                 d2[(f1′′, f2′′)] = get(d2, (f1′′, f2′′), zero(coeff)) + coeff
             end
@@ -816,27 +822,30 @@ println("---------------------------------------")
 @timedtestset "Tensors with symmetry involving $Istr ($i, $j)" verbose = true for i in 1:r, j in 1:r
     isdiag = i == j
 
-    VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-                Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),   # avoids OOMs?
-                Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
-                Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-                Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
-        )
-
-    VM = Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)) # all module objects 
-
-    VM1 = (Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1), # written so V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 works
-            Vect[I](rand_object(I, i, j) => 2), # generally less blocksectors
-            Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
-            VM, # important that V4 is module-graded
-            Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
+    VC = (
+        Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),   # avoids OOMs?
+        Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
+        Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+        Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 3),
     )
 
-    VM2 = (Vect[I](rand_object(I, i, j) => 2), # second set where module is V1 here
-            Vect[I](unit(I(j, j, 1)) => 1, rand_object(I, j, j) => 1),
-            Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
-            VM,
-            Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
+    VM = Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)) # all module objects
+
+    VM1 = (
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1), # written so V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 works
+        Vect[I](rand_object(I, i, j) => 2), # generally less blocksectors
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM, # important that V4 is module-graded
+        Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
+    )
+
+    VM2 = (
+        Vect[I](rand_object(I, i, j) => 2), # second set where module is V1 here
+        Vect[I](unit(I(j, j, 1)) => 1, rand_object(I, j, j) => 1),
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM,
+        Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
     )
 
     Vcol = isdiag ? (VC,) : (VM1, VM2)  # avoid duplicate runs
@@ -862,7 +871,7 @@ println("---------------------------------------")
                     next = @constinferred Nothing iterate(bs, state)
                     b2 = @constinferred block(t, first(blocksectors(t)))
                     @test b1 == b2
-                    @test eltype(bs) === Pair{typeof(c),typeof(b1)}
+                    @test eltype(bs) === Pair{typeof(c), typeof(b1)}
                     @test typeof(b1) === TK.blocktype(t)
                     @test typeof(c) === sectortype(t)
                 end
@@ -1059,8 +1068,8 @@ println("---------------------------------------")
             for T in (Float32, ComplexF64)
                 tA = rand(T, V1 ⊗ V2, V1 ⊗ V2) # rewritten for modules
                 tB = rand(T, V4 ⊗ V5, V4 ⊗ V5)
-                tA = 3 // 2 * leftorth(tA; alg=TK.Polar())[1]
-                tB = 1 // 5 * leftorth(tB; alg=TK.Polar())[1]
+                tA = 3 // 2 * leftorth(tA; alg = TK.Polar())[1]
+                tB = 1 // 5 * leftorth(tB; alg = TK.Polar())[1]
                 tC = rand(T, V1 ⊗ V2, V4 ⊗ V5)
                 t = @constinferred sylvester(tA, tB, tC)
                 @test codomain(t) == V1 ⊗ V2
@@ -1146,27 +1155,30 @@ println("---------------------------------------")
 @timedtestset "Factorizations with symmetry involving $Istr ($i, $j)" verbose = true for i in 1:r, j in 1:r
     isdiag = i == j
 
-    VC = (Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-                Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),   # avoids OOMs?
-                Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
-                Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
-                Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 3)
-        )
-
-    VM = Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)) # all module objects 
-
-    VM1 = (Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1), # written so V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 works
-            Vect[I](rand_object(I, i, j) => 2), # generally less blocksectors
-            Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
-            VM, # important that V4 is module-graded
-            Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
+    VC = (
+        Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),   # avoids OOMs?
+        Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 1),
+        Vect[I]((i, i, label) => 1 for label in 1:MTK._numlabels(I, i, i)),
+        Vect[I](unit(I(i, i, 1)) => 2, rand_object(I, i, i) => 3),
     )
 
-    VM2 = (Vect[I](rand_object(I, i, j) => 2), # second set where module is V1 here
-            Vect[I](unit(I(j, j, 1)) => 1, rand_object(I, j, j) => 1),
-            Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
-            VM,
-            Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1)
+    VM = Vect[I]((i, j, label) => 1 for label in 1:MTK._numlabels(I, i, j)) # all module objects
+
+    VM1 = (
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1), # written so V1 ⊗ V2 ← V3 ⊗ V4 ⊗ V5 works
+        Vect[I](rand_object(I, i, j) => 2), # generally less blocksectors
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM, # important that V4 is module-graded
+        Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
+    )
+
+    VM2 = (
+        Vect[I](rand_object(I, i, j) => 2), # second set where module is V1 here
+        Vect[I](unit(I(j, j, 1)) => 1, rand_object(I, j, j) => 1),
+        Vect[I](unit(I(i, i, 1)) => 1, rand_object(I, i, i) => 1),
+        VM,
+        Vect[I](unit(I(j, j, 1)) => 2, rand_object(I, j, j) => 1),
     )
 
     Vs = isdiag ? (VC,) : (VM1, VM2)  # avoid duplicate runs
