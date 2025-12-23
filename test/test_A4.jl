@@ -89,7 +89,6 @@ end
             @constinferred dim(m)
             @constinferred frobenius_schur_phase(m)
             @constinferred frobenius_schur_indicator(m)
-            @constinferred Asymbol(m, mop, c)
             @constinferred Bsymbol(m, mop, c)
             @constinferred Fsymbol(mop, m, mop, mop, d, c)
         end
