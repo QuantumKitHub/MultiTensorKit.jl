@@ -3,7 +3,8 @@ module MultiTensorKit
 export BimoduleSector, A4Object
 
 using DelimitedFiles
-using Artifacts
+using Pkg
+using Pkg.Artifacts
 using TensorKitSectors
 
 using TupleTools
