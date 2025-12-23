@@ -61,9 +61,13 @@ end
             @constinferred dual(s[1])
             @test dual(s[1]) == I.(i, i, MTK._get_dual_cache(I)[2][i, i][s[1].label])
             @constinferred dim(s[1])
-            @constinferred frobeniusschur(s[1])
+            @constinferred frobenius_schur_phase(s[1])
+            @constinferred frobenius_schur_indicator(s[1])
+            @constinferred Nsymbol(s...)
+            @constinferred Asymbol(s...)
             @constinferred Bsymbol(s...)
-            @constinferred Fsymbol(s..., s...)
+            F = @constinferred Fsymbol(s..., s...)
+            @test eltype(F) <: @testinferred sectorscalartype(I)
         end
     else
         @testset "Basic module properties" begin
@@ -83,7 +87,9 @@ end
             @test dual(dual(m)) == m
 
             @constinferred dim(m)
-            @constinferred frobeniusschur(m)
+            @constinferred frobenius_schur_phase(m)
+            @constinferred frobenius_schur_indicator(m)
+            @constinferred Asymbol(m, mop, c)
             @constinferred Bsymbol(m, mop, c)
             @constinferred Fsymbol(mop, m, mop, mop, d, c)
         end
