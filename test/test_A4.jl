@@ -7,6 +7,9 @@ using LinearAlgebra: LinearAlgebra
 const MTK = MultiTensorKit
 const TK = TensorKit
 
+@isdefined TestSetup || include("setup.jl")
+using .TestSetup
+
 I = A4Object
 Istr = TensorKitSectors.type_repr(I)
 r = size(I)

@@ -15,7 +15,6 @@ istestfile(fn) = endswith(fn, ".jl") && startswith(basename(fn), "test_") &&
                  !contains(fn, "setup")
 
 include("setup.jl")
-using .TestSetup
 
 @time begin
     # tests in groups based on folder structure
