@@ -1,9 +1,10 @@
 using Documenter
 using DocumenterCitations
+# using TensorKitSectors, TensorKit
 using MultiTensorKit
 
 pages = ["Home" => "index.md",
-         "Manual" => ["man/fusioncats.md", "man/multifusioncats.md", "man/implementation.md"],
+         "Manual" => ["man/fusioncats.md", "man/multifusioncats.md", "man/extension.md", "man/implementation.md"],
          "Library" => "lib/library.md",
          "References" => "references.md"]
 

@@ -5,7 +5,7 @@
 ## Package summary
 MultiTensorKit.jl provides the user a package to work with multifusion categories, the extension of regular fusion categories where the unit is no longer simple and unique.
 Multifusion categories naturally embed the structure of module categories over fusion categories. Hence, MultiTensorKit.jl allows not only the fusion of objects within the same
-fusion category (as TensorKit.jl), but also the fusion with and between module categories over these fusion categories. 
+fusion category (as TensorKit.jl), but also the fusion with and between module categories over these fusion categories.
 
 MultiTensorKit.jl is built to be compatible with TensorKit, thus allowing the construction of symmetric tensors with new symmetries due to the module structure. Through this,
 tensor network simulations of quantum many-body systems with aid of [MPSKit.jl](https://github.com/QuantumKitHub/MPSKit.jl) can be performed.
@@ -30,5 +30,5 @@ As the name suggests, MultiTensorKit is an extension of [TensorKit.jl](https://g
 [TensorKitSectors.jl](https://github.com/QuantumKitHub/TensorKitSectors.jl). Therefore, we recommend including TensorKit 
 to your project. Additionally, MultiTensorKit was made to be functional with [MPSKit.jl](https://github.com/QuantumKitHub/MPSKit.jl)
 and [MPSKitModels.jl](https://github.com/QuantumKitHub/MPSKitModels.jl) for Matrix Product State (MPS) calculations, supporting symmetries
-which go beyond TensorKit. All these packages are registered in JuliaRegistries and can be added through the package manager.
+which go beyond TensorKit. In particular, TensorKit v0.16.0 and MPSKit v0.13.9 contain the necessary functionality to deal with the multifusion categorical structure provided by MultiTensorKit. All these packages are registered in JuliaRegistries and can be added through the package manager.
 

@@ -29,7 +29,7 @@ The easiest way to identify which elements of the multifusion category correspon
 Now that we have identified the fusion and module categories, we want to select the relevant objects we wish to place in our graded spaces. Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label=1` corresponds to the unit object. Hence, the simplest way to find the unit object of a fusion subcategory is
 
 ````julia
-one(A4Object(i,i,1))
+unit(A4Object(i,i,1))
 ````
 
 Left and right units of subcategories are uniquely specified by their fusion rules. For example, the left unit of a subcategory $\mathcal{C}_{ij}$ is the simple object in $\mathcal{C}_i$ for which
@@ -41,7 +41,7 @@ A similar condition uniquely defines the right unit of a subcategory. For fusion
 Identifying the other simple objects of a (not necessarily fusion) category requires more work. We recommend a combination of the following to uniquely determine any simple object `a`:
 - Check the dimension of the simple object: `dim(a)`
 - Check the dual of the simple object: `dual(a)`
-- Check how this simple object fuses with other (simple) objects: `Nsymbol(a,b,c)`
+- Check how this simple object fuses with other (simple) objects: `Nsymbol(a, b, c)`
 
 The dual object of some simple object $a$ of an arbitrary subcategory $\mathcal{C}_{ij}$ is defined as the unique object $a^* \in \mathcal{C}_{ji}$ satisfying
 
@@ -63,24 +63,24 @@ Since we want to replicate a spin-1 Heisenberg model, it makes sense to use the 
 P = Vect[A4Object](D4 => 1) # physical space
 T = ComplexF64
 # usual Heisenberg part
-h1_L = TensorMap(zeros, T, P ⊗ P ← P)
-h1_R = TensorMap(zeros, T, P ← P ⊗ P)
+h1_L = zeros(T, P ⊗ P ← P)
+h1_R = zeros(T, P ← P ⊗ P)
 block(h1_L, D4) .= [0; 1]
 block(h1_R, D4) .= [0 1;]
-@plansor h1[-1 -2; -3 -4] := h1_L[-1 1; -3] * h1_R[-2; 1 -4]
+@planar h1[-1 -2; -3 -4] := h1_L[-1 1; -3] * h1_R[-2; 1 -4]
 
 # biquadratic term
-h2_L = TensorMap(zeros, T, P ⊗ Vect[A4Object](D1 => 1, D2 => 1, D3 => 1) ← P)
-h2_R = TensorMap(ones, T, P ← Vect[A4Object](D1 => 1, D2 => 1, D3 => 1) ⊗ P)
+h2_L = zeros(T, P ⊗ Vect[A4Object](D1 => 1, D2 => 1, D3 => 1) ← P)
+h2_R = ones(T, P ← Vect[A4Object](D1 => 1, D2 => 1, D3 => 1) ⊗ P)
 block(h2_L, D4) .= [4 / 3; 1 / 3; 1 / 3]
-@plansor h2[-1 -2; -3 -4] := h2_L[-1 1; -3] * h2_R[-2; 1 -4]
+@planar h2[-1 -2; -3 -4] := h2_L[-1 1; -3] * h2_R[-2; 1 -4]
 
 # anti-commutation term
-h3_L = TensorMap(zeros, T, P ⊗ P ← P)
-h3_R = TensorMap(zeros, T, P ← P ⊗ P)
+h3_L = zeros(T, P ⊗ P ← P)
+h3_R = zeros(T, P ← P ⊗ P)
 block(h3_L, D4) .= [1; 0]
 block(h3_R, D4) .= [0 1;]
-@plansor h3[-1 -2; -3 -4] := h3_L[-1 1; -3] * h3_R[-2; 1 -4]
+@planar h3[-1 -2; -3 -4] := h3_L[-1 1; -3] * h3_R[-2; 1 -4]
 
 L = 60
 J1 = -2.0 # probing the A4 symmetric phase first
@@ -106,7 +106,7 @@ init_mps = FiniteMPS(L, P, V; left=Vb, right=Vb)
 ````
 
 !!! warning "Important"
-    We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit. 
+    We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit.
 
 ## DMRG2 and the entanglement spectrum
 We can now look to find the ground state of the Hamiltonian with two-site DMRG. We use this instead of the "usual" one-site DMRG because the two-site one will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations. 
@@ -132,7 +132,7 @@ Consider a quantum lattice model with its symmetries determing the phase diagram
 
 ````julia
 module_numlabels(i) = MultiTensorKit._numlabels(A4Object, i, 6) 
-V = Vect[A4Object](A4Object(i, 6, label) => D for label in 1:module_numlabels(i))
+V = Vect[A4Object]((i, 6, label) => D for label in 1:module_numlabels(i))
 Vb = Vect[A4Object](first(sectors(V)) => 1) # not all charges on boundary, play around with what is there
 ````
 
@@ -157,10 +157,10 @@ init = InfiniteMPS([P], [V])
 inf_alg = VUMPS(; verbosity=2, tol=1e-7)
 ````
 
-Besides `VUMPS`, `IDMRG` and `IDMRG2` are as easy to run with the `A4Object` `Sector`. It is also clear that boundary terms do not play a role in this case.
+Besides `VUMPS`, `IDMRG` and `IDMRG2` are as easy to run with the `A4Object` `BimoduleSector`. It is also clear that boundary terms do not play a role in this case.
 
 !!! note "More functions for infinite systems"
-    When dealing with an infinite system, additional information can be retrieved from the matrix product state. These also require a keyword argument `sector` to be specified. These are
+    When dealing with an infinite system, additional information can be retrieved from the matrix product state. These also require a keyword argument `sector` to be specified, as otherwise the correct unit object is placed by default. These are
     - `transfer_spectrum`: similar to `excitations`, the (partial) transfer matrix spectrum is selected by adding a charged auxiliary space to the transfer matrix eigenvectors. 
     - `correlation_length`: since this function calls `transfer_spectrum`, the same logic applies.
     - `excitations` in the infinite case also requires the keyword argument.
