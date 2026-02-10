@@ -1,6 +1,6 @@
 [fusiondata]
-git-tree-sha1 = "51945fa48a93f5cce598479303c1a33b1adb1460"
+git-tree-sha1 = "bdaf92aa15f231f7a88576f9d1466600c64b342f"
 
     [[fusiondata.download]]
-    sha256 = "9db43abcccb3bef484bf7837eec933cbc9bc5ad7ab3bb2ea13ee70e505f58ca7"
-    url = "https://github.com/QuantumKitHub/MultiTensorKit.jl/archive/refs/tags/data-v0.1.2.tar.gz"
+    sha256 = "189a858fe7a6566de3f7428d99b70bac047ee226d4c6e0da647df944db5228d7"
+    url = "https://github.com/QuantumKitHub/MultiTensorKit.jl/archive/refs/tags/data-v0.1.5.tar.gz"

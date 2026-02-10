@@ -14,6 +14,8 @@ const GROUP = uppercase(if isnothing(arg_id)
 istestfile(fn) = endswith(fn, ".jl") && startswith(basename(fn), "test_") &&
                  !contains(fn, "setup")
 
+include("setup.jl")
+
 @time begin
     # tests in groups based on folder structure
     for testgroup in filter(isdir, readdir(@__DIR__))
