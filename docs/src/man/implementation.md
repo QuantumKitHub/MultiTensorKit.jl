@@ -1,4 +1,4 @@
-# MultiTensorKit implementation: $\mathsf{Rep(A_4)}$ as a guiding example
+# Symmetric tensor networks: $\mathsf{Rep(A_4)}$ as a guiding example
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations.
 In particular, we will be making a generalised anyonic spin chain.
 We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite).

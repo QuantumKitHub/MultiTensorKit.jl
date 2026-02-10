@@ -51,12 +51,12 @@ In particular, the presence of a simple unit object for every fusion category on
 Most notably, the unit object is no longer unique, and thus it is of utmost importance that the correct unit object is considered when performing tensor contractions at the level of the fusion trees.
 This is achieved precisely through colorings and the use of `leftunit` and `rightunit`.
 For this reason, every fusion tree manipulation which previously involved "the" unit object, now involves the `leftunit` and `rightunit` of some neighboring sector in the manipulation to identify the correct color.
-An important example of this is explained in the previous section [opposite module categories], namely the mapping of a splitting vertex to a fusion vertex through the B-move.
+An important example of this is explained in the previous section [#TODO: add opposite module categories reference], namely the mapping of a splitting vertex to a fusion vertex through the B-move.
 
 # MultiTensorKit compatibility with MPSKit
 
 This section will briefly explain the changes within MPSKit which are required to make it compatible with MultiTensorKit.
-For a more practical explanation, users are kindly guided towards the next section [implementation].
+For a more practical explanation, users are kindly guided towards the next section [#TODO: add implementation reference].
 
 The main change within MPSKit is very similar to the fusion tree manipulations in TensorKit, namely the use of `leftunit` and `rightunit` to identify the correct unit object.
 In the case of MPSKit, trivial spaces are used everywhere, from the boundary of a finite MPS to the virtual spaces of a Hamiltonian written in MPO form.
