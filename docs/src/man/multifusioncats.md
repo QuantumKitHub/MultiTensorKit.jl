@@ -111,17 +111,6 @@ With this, we see that the multifusion category itself can be decomposed into it
 $$\mathcal{C} = \bigoplus_{i,j=1}^r \mathcal{C}_{ij}.$$
 
 We call this an $r \times r$ multifusion category.
-Due to this structure, we represent a simple object in the multifusion category "Name" by
-
-````julia
-struct BimoduleSector{Name} <: Sector
-    i::Int
-    j::Int
-    label::Int
-end
-````
-
-`i` and `j` specify which subcategory $\mathcal{C}_{ij}$ we are considering, and `label` selects a particular simple object within that subcategory.
 
 We want to consider multifusion categories because **their structure encapsulates that of (bi)module categories**.
 Every diagonal category $\mathcal{C}_{ii} \coloneqq \mathcal{C}_i$ (also known as a component category) is a fusion category, and every off-diagonal category $\mathcal{C}_{ij}$ is an invertible $(\mathcal{C}_{i}, \mathcal{C}_{j})$-bimodule category.
@@ -263,11 +252,11 @@ By choosing appropriate bases, one can transform the F-symbols of a (multi)fusio
 More details on the importance of unitary topological data can be found in the [TensorKit](https://jutho.github.io/TensorKit.jl/stable/man/categories/#ss_topologicalfusion) documentation.
 
 ### Braiding
-A very important aspect of MultiTensorKit is that all `BimoduleSector`s are defined to *not* support braiding: `TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()`.
+Sectors provided by MultiTensorKit do *not* support braiding.
 We do this for two reasons.
 On the one hand, there is no natural 1-categorical way of defining braidings between the components of the multifusion category.
 It is possible that the diagonal fusion categories themselves are braided, but a "componentwise" braiding is unwise to support.
-On the other hand, it is entirely possible to write matrix product state manipulations in a planar manner (which has been done in [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl)), thus avoiding the need of a braiding tensor.
+On the other hand, it is entirely possible to write matrix product state manipulations in a planar manner (which has been done in [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl)), thus avoiding the need of a braiding tensor. More information on this can be found in the next section [#TODO: add reference to extension page]
 
 ## Examples of multifusion categories
 Without specifying any of the categories, the simplest non-trivial multifusion category is a $2\times 2$ one, and the categories can be organised in a matrix as
@@ -285,3 +274,5 @@ This particular example can be found in [TensorKitSectors](https://github.com/Qu
 
 This construction can be generalised to $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep(G)}$ with $\mathsf{G}$ a finite abelian group, such that the entire multifusion category is Morita equivalent to $\mathsf{Rep(G)}$ and can be evaluated as the Tambara-Yamagami category $\mathsf{TY}(\mathsf{G})$ (with positive Frobenius-Schur indicator for our purposes), and $\mathsf{Vec}$ will represent the duality object which squares to all invertible objects of the original group.
 To be exact, one of the diagonal fusion categories should be $\mathsf{Vec_G}$ for the correct Morita dual relation, but it is known for abelian groups that this is isomorphic to $\mathsf{Rep(G)}$.
+
+The example $\mathcal{C}_1 = \mathsf{Rep(A_4)}$ is worked out more in detail on the [#TODO add reference to implementation page].
