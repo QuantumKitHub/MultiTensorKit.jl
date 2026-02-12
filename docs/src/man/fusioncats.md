@@ -1,5 +1,3 @@
-# [Introduction](@id intro)
-
 The manual has been divided into different sections in an attempt to break down the information the user requires to use MultiTensorKit.jl.
 We start off with a short summary of fusion category theory.
 Users familiar with TensorKit.jl may have read the [Optional introduction to category theory](https://jutho.github.io/TensorKit.jl/stable/man/categories/) in the documentation of TensorKit; this section can then largely be skipped.
