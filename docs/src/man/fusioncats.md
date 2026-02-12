@@ -1,4 +1,4 @@
-# Introduction 
+# [Introduction](@id intro)
 
 The manual has been divided into different sections in an attempt to break down the information the user requires to use MultiTensorKit.jl.
 We start off with a short summary of fusion category theory.
@@ -7,7 +7,7 @@ Be aware that notation may differ from the literature.
 
 Afterwards, the extension to multifusion categories is explained, and its relation to (bi)module categories over fusion categories is shown.
 
-# Fusion category theory
+# [Fusion category theory](@id fusion_cat_theory)
 
 The aim of this section is to explain the bare minimum required to proceed to the next section on multifusion category theory and bimodule categories.
 More details can be found in the [TensorKit](https://jutho.github.io/TensorKit.jl/stable/man/categories/) documentation or the book Tensor Categories [etingof2016tensor](@cite).

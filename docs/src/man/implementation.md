@@ -1,4 +1,4 @@
-# Symmetric tensor networks: $\mathsf{Rep(A_4)}$ as a guiding example
+# [Symmetric tensor networks: $\mathsf{Rep(A_4)}$ as a guiding example](@id implementation)
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations.
 In particular, we will be making a generalised anyonic spin chain.
 We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite).
@@ -35,8 +35,6 @@ Thus, the 7 module categories $\mathcal{M}$ one can choose over $\mathsf{Rep(A_4
 - ``\mathsf{Rep^\psi(A_4)}``.
   
 When referring to specific fusion and module categories, we will use this non-multifusion notation.
-
-The easiest way to identify which elements of the multifusion category correspond to the subcategories we wish to use is ... #TODO
 
 Now that we have identified the fusion and module categories, we want to select the relevant objects we wish to place in our graded spaces.
 Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label=1` corresponds to the unit object.

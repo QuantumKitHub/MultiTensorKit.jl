@@ -1,4 +1,4 @@
-# Extending to multifusion category theory
+# [Extending to multifusion category theory](@id multifusion_cat_theory)
 
 This section will explain how to go from a fusion category to a multifusion category, as well as why one would want to consider the latter.
 Multifusion categories naturally embed the structure of **bimodule categories**.
@@ -65,7 +65,7 @@ An F-move with ${}^{\bowtie}\!F$ is given by:
 ```@raw html
 <img src="../img/Fmove_CMD.svg" alt="" width="70%" class="color-invertible"/>
 ``` 
-## Opposite module categories
+## [Opposite module categories](@id opposite_module_categories)
 Consider a fusion category $\mathcal{D}$ and a *right* module category $\mathcal{M}$ over $\mathcal{D}$.
 We can define $\mathcal{M}^{\text{op}}$ to be the opposite category of $\mathcal{M}$ [etingof2009](@cite).
 Then, $\mathcal{M}^{\text{op}}$ is a *left* module category over $\mathcal{D}$.
@@ -256,7 +256,7 @@ Sectors provided by MultiTensorKit do *not* support braiding.
 We do this for two reasons.
 On the one hand, there is no natural 1-categorical way of defining braidings between the components of the multifusion category.
 It is possible that the diagonal fusion categories themselves are braided, but a "componentwise" braiding is unwise to support.
-On the other hand, it is entirely possible to write matrix product state manipulations in a planar manner (which has been done in [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl)), thus avoiding the need of a braiding tensor. More information on this can be found in the next section [#TODO: add reference to extension page]
+On the other hand, it is entirely possible to write matrix product state manipulations in a planar manner (which has been done in [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl)), thus avoiding the need of a braiding tensor. More information on this can be found in [MultiTensorKit as an extension to TensorKit](@ref extension).
 
 ## Examples of multifusion categories
 Without specifying any of the categories, the simplest non-trivial multifusion category is a $2\times 2$ one, and the categories can be organised in a matrix as
@@ -275,4 +275,4 @@ This particular example can be found in [TensorKitSectors](https://github.com/Qu
 This construction can be generalised to $\mathcal{C}_1 = \mathcal{C}_2 = \mathsf{Rep(G)}$ with $\mathsf{G}$ a finite abelian group, such that the entire multifusion category is Morita equivalent to $\mathsf{Rep(G)}$ and can be evaluated as the Tambara-Yamagami category $\mathsf{TY}(\mathsf{G})$ (with positive Frobenius-Schur indicator for our purposes), and $\mathsf{Vec}$ will represent the duality object which squares to all invertible objects of the original group.
 To be exact, one of the diagonal fusion categories should be $\mathsf{Vec_G}$ for the correct Morita dual relation, but it is known for abelian groups that this is isomorphic to $\mathsf{Rep(G)}$.
 
-The example $\mathcal{C}_1 = \mathsf{Rep(A_4)}$ is worked out more in detail on the [#TODO add reference to implementation page].
+The example $\mathcal{C}_1 = \mathsf{Rep(A_4)}$ is worked out more in detail in the [guiding example](@ref implementation).

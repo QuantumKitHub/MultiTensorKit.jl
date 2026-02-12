@@ -1,4 +1,4 @@
-# MultiTensorKit as an extension to TensorKit
+# [MultiTensorKit as an extension to TensorKit](@id extension)
 
 This section will explain the internal changes to TensorKit which are required to extend the compatibility with fusion categories to multifusion ones.
 Users who are unfamiliar with TensorKit are kindly guided towards the [TensorKit tutorial](https://jutho.github.io/TensorKit.jl/stable/man/tutorial/).
@@ -30,9 +30,16 @@ These data are cached in a hash table for later use.
 
 A consequence of the multifusion structure is the colorings used in the graphical calculus of fusions.
 A natural introduction is the notion of a *left* and *right* unit of some (simple) object in the multifusion category.
+These are called with the functions `TensorKitSectors.leftunit` and `TensorKitSectors.rightunit`.
 Clearly, for the usual case of just one fusion category, these both coincide with the unique unit object.
+For this reason, the `TensorKitSectors.UnitStyle` trait is introduced to differentiate between fusion categories and multifusion categories, returning `SimpleUnit()` and `GenericUnit()`, respectively.
+This trait is used to specialise certain functions within TensorKit (see below).
+`TensorKitSectors.allunits` is also introduced to return all the simple unit objects of the (multi)fusion category.
+This function must be defined for every multifusion category to be compatible with TensorKit.
 Via the fusion rules, the left and right units of all `BimoduleSector`s along with their duals are also extracted and cached.
-Since the most general fusion rule possible is one with multiplicities involved, the entire `BimoduleSector` is set to have `TensorKitSectors.FusionStyle(::Type{<:BimoduleSector}) = GenericFusion()`.
+The fusion behavior that must be imposed for the entire `BimoduleSector` is the most general one that appears in the fusion between any two `BimoduleSector`s.
+In particular, if one of the diagonal fusion categories has fusion rules with multiplicities, then the entire `BimoduleSector` must be set to have `TensorKitSectors.FusionStyle(::Type{<:BimoduleSector}) = GenericFusion()`.
+This is the case for the $A_4$ `BimoduleSector`, since $\mathsf{Rep(A_4)}$ is one of the diagonal fusion categories and has fusion rules with multiplicities.
 
 Going beyond the ring structure, the F-symbols are also read in from the artifact, and are stored in a hash table for later use.
 The F-symbols are then used to perform F-moves on `BimoduleSector`s, which is required to perform recouplings of fusion trees when doing e.g. contractions of tensors with these categories grading the vector spaces.
@@ -48,15 +55,23 @@ This allows for more general tensor network simulations of quantum many-body sys
 
 Certain changes within TensorKit were required to make it compatible with the multifusion categorical structure.
 In particular, the presence of a simple unit object for every fusion category on the diagonal of the multifusion category, along with the off-diagonal nature of the simple objects of the bimodule categories, required some internal changes to the way unit objects were treated in TensorKit.
-Most notably, the unit object is no longer unique, and thus it is of utmost importance that the correct unit object is considered when performing tensor contractions at the level of the fusion trees.
+Most notably, the unit object is no longer unique, and thus it is of utmost importance that the correct one is considered when performing tensor contractions at the level of the fusion trees.
 This is achieved precisely through colorings and the use of `leftunit` and `rightunit`.
 For this reason, every fusion tree manipulation which previously involved "the" unit object, now involves the `leftunit` and `rightunit` of some neighboring sector in the manipulation to identify the correct color.
-An important example of this is explained in the previous section [#TODO: add opposite module categories reference], namely the mapping of a splitting vertex to a fusion vertex through the B-move.
+An important example of this is explained in the previous section on [Opposite module categories](@ref opposite_module_categories), namely the mapping of a splitting vertex to a fusion vertex via a B-move.
+
+When manipulating spaces graded by `BimoduleSector`s, one needs to also be careful of which unit spaces can compose with other graded spaces on which side.
+This introduces the functions `TensorKit.leftunitspace` and `TensorKit.rightunitspace`, which check whether the coloring of the (in general) composite object grading the space is uniform, then return the one-dimensional space with the unique left/right unit object consistent with that coloring.
+Clearly, `leftunitspace` and `rightunitspace` coincide for fusion categories; this defaults to `TensorKit.unitspace`.
+For multifusion categories, the latter function returns the space with the semisimple unit object grading it.
+`leftunitspace` and `rightunitspace` are used with the functions `TensorKit.insertleftunit` and `TensorKit.insertrightunit`.
+There, based on the index where a unit space is wished to be inserted, a `leftunitspace` or `rightunitspace` is added such that the resulting space remains consistent with the fusion rules of the multifusion category.
+Similarly, `TensorKit.removeunit` is used to remove unit spaces, and will explicitly check whether the space contains only unit objects of any color with `TensorKit.isunitspace`.
 
 # MultiTensorKit compatibility with MPSKit
 
 This section will briefly explain the changes within MPSKit which are required to make it compatible with MultiTensorKit.
-For a more practical explanation, users are kindly guided towards the next section [#TODO: add implementation reference].
+For a more practical explanation, users are kindly guided towards the [Example section](@ref implementation).
 
 The main change within MPSKit is very similar to the fusion tree manipulations in TensorKit, namely the use of `leftunit` and `rightunit` to identify the correct unit object.
 In the case of MPSKit, trivial spaces are used everywhere, from the boundary of a finite MPS to the virtual spaces of a Hamiltonian written in MPO form.
