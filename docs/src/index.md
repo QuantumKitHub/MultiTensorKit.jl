@@ -15,7 +15,7 @@ tensor network simulations of quantum many-body systems with aid of [MPSKit.jl](
 ## Table of contents
 
 ```@contents
-Pages = ["man/fusioncats.md","man/multifusioncats.md","lib/library.md", "references.md"]
+Pages = ["man/fusioncats.md", "man/multifusioncats.md", "man/extension.md", "man/implementation.md", "lib/library.md", "references.md"]
 Depth = 2
 ```
 
