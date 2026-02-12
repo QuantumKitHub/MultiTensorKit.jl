@@ -1,5 +1,6 @@
 # [Symmetric tensor networks: $\mathsf{Rep(A_4)}$ as a guiding example](@id implementation)
 This tutorial is dedicated to explaining how MultiTensorKit was implemented to be compatible with with TensorKit and MPSKit for matrix product state simulations.
+This section should be largely self-contained and is meant to be a practical guide to using MultiTensorKit.
 In particular, we will be making a generalised anyonic spin chain.
 We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite).
 The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
@@ -7,13 +8,9 @@ The model considered there is a spin-1 Heisenberg model with additional terms to
 This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep(A_4)}$.
 Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category.
 There are 3 fusion categories up to equivalence:
-- ``\mathsf{Vec_{A_4}}``: the category of $\mathsf{A_4}$-graded vector spaces.
-The group $\mathsf{A}_4$ is order $4!/2 = 12$.
-It has thus 12 objects.
-- ``\mathsf{Rep(A_4)}``: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4.
-One is the trivial representation, two are one-dimensional non-trivial and the last is three-dimensional.
-- ``\mathsf{Rep(H)}``: the representation category of some Hopf algebra which does not have a name.
-It has 6 simple objects.
+- ``\mathsf{Vec_{A_4}}``: the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$ and has thus 12 simple objects.
+- ``\mathsf{Rep(A_4)}``: the irreducible representations of the group $\mathsf{A}_4$, of which there are 4. One is the trivial representation, two are one-dimensional non-trivial and the last is three-dimensional.
+- ``\mathsf{Rep(H)}``: the representation category of some Hopf algebra which does not have a name. It has 6 simple objects.
 
 For this example, we will require the following packages:
 ````julia
@@ -37,11 +34,11 @@ Thus, the 7 module categories $\mathcal{M}$ one can choose over $\mathsf{Rep(A_4
 When referring to specific fusion and module categories, we will use this non-multifusion notation.
 
 Now that we have identified the fusion and module categories, we want to select the relevant objects we wish to place in our graded spaces.
-Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label=1` corresponds to the unit object.
+Unfortunately, due to the nature of how the N-symbol and F-symbol data are generated, the objects of the fusion subcategories are not ordered such that `label = 1` corresponds to the unit object.
 Hence, the simplest way to find the unit object of a fusion subcategory is
 
 ````julia
-unit(A4Object(i,i,1))
+unit(A4Object(i, i, 1))
 ````
 
 Left and right units of subcategories are uniquely specified by their fusion rules.
@@ -64,8 +61,8 @@ $$^{}_a \mathbb{1} \in a \times a^* \quad \text{and} \quad \mathbb{1}_a \in a^* 
 
 with multiplicity 1.
 ## Constructing the Hamiltonian and matrix product state
-TensorKit has been made compatible with the multifusion structure by keeping track of the relevant units in the fusion tree manipulations.
-With this, we can make `GradedSpace`s whose objects are in `A4Object`: 
+TensorKit has been made compatible with the multifusion structure.
+With this, we can make `GradedSpace`s whose objects are in `A4Object`:
 
 ````julia
 D1 = A4Object(6, 6, 1) # unit in this case
@@ -120,17 +117,17 @@ and construct the finite MPS:
 D = 40 # bond dimension
 V = Vect[A4Object](M => D)
 Vb = Vect[A4Object](M => 1) # non-degenerate boundary virtual space
-init_mps = FiniteMPS(L, P, V; left=Vb, right=Vb)
+init_mps = FiniteMPS(L, P, V; left = Vb, right = Vb)
 ````
 
 !!! warning "Important"
     We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit.
 
-## DMRG2 and the entanglement spectrum
+## Two-site DMRG and the entanglement spectrum
 We can now look to find the ground state of the Hamiltonian with two-site DMRG.
-We use this instead of the "usual" one-site DMRG because the two-site one will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations.
+We use this instead of the "usual" one-site DMRG because the two-site algorithm will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations.
 ````julia
-dmrg2alg = DMRG2(;verbosity=2, tol=1e-7, trscheme=truncbelow(1e-4))
+dmrg2alg = DMRG2(; verbosity = 2, tol = 1e-7, trscheme = truncbelow(1e-4))
 ψ, _ = find_groundstate(init_mps, H, dmrg2alg)
 ````
 The truncation scheme keyword argument is mandatory when calling `DMRG2` in MPSKit.
@@ -146,16 +143,16 @@ This returns a dictionary which maps the objects grading the virtual space to th
 In this case, there is one key corresponding to $\mathsf{Vec}$.
 We can also immediately return a plot of this data by the following:
 ````julia
-entanglementplot(ψ;site=round(Int, L/2))
+entanglementplot(ψ; site = round(Int, L/2))
 ````
-This plot will show the singular values per object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system.
+This plot will show the singular values per simple object, as well as include the "effective" bond dimension, which is simply the dimension of the virtual space where we cut the system.
 The next section will show this plot along with those when selecting the other module categories.
 
 ## Search for the correct dual model
 
-Consider a quantum lattice model with its symmetries determing the phase diagram.
+Consider a quantum lattice model with its symmetries determining the phase diagram.
 For every phase in the phase diagram, the dual model for which the ground state maximally breaks all symmetries spontaneously is the one where the entanglement is minimised and the tensor network is represented most efficiently [Lootens_2024](@cite).
-Let us confirm this result, starting with the $\mathsf{Rep(A_4)}$ spontaneous symmetry breaking phase.
+Let us confirm this result, starting with the $A_4$-symmetric phase whose ideal dual model is in the $\mathsf{Rep(A_4)}$ spontaneous symmetry breaking phase.
 The code will look exactly the same as above, except the virtual space of the MPS will change to be graded by the other module categories:
 
 ````julia
@@ -163,12 +160,12 @@ module_numlabels(i) = MultiTensorKit._numlabels(A4Object, i, 6)
 V = Vect[A4Object]((i, 6, label) => D for label in 1:module_numlabels(i))
 Vb = Vect[A4Object](first(sectors(V)) => 1) # not all charges on boundary, play around with what is there
 ````
-
+#TODO: fix the figure
 ```@raw html
 <img src="../img/A4_sym_entanglement_spectrum.svg" alt="" width="90%"/>
 ``` 
 
-The plot shows the entanglement spectra of the various dual models in the middle of the ground state for the original Hamiltonian probing the $\mathsf{Rep(A_4)}$-symmetric phase, along with the ground state without symmetries.
+The plot shows the entanglement spectra of the various dual models in the middle of the ground state for the original Hamiltonian probing the $A_4$-symmetric phase, along with the ground state without symmetries.
 Every subtitle also mentions the memory required to store the same middle ground state tensor.
 This plot should be compared to [Lootens_2024; Figure 2](@cite).
 
@@ -176,11 +173,11 @@ This can be repeated with other parameter values for $J_1$ and $J_2$ in the Hami
 
 !!! note "Additional functions and keyword arguments"
     Certain commonly used functions within MPSKit require extra keyword arguments to be compatible with multifusion MPS simulations.
-In particular, the keyword argument `sector` (note the lowercase "s") appears in 
+    In particular, the keyword argument `sector` (note the lowercase "s") appears in 
     - `excitations` with `QuasiparticleAnsatz`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix.
-Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the charged excitations lie in the symmetry category $\mathcal{C} = \mathcal{D^*_M}$.
+    Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the charged excitations lie in the symmetry category $\mathcal{C} = \mathcal{D^*_M}$.
     - `exact_diagonalization`: the `sector` keyword argument now requires an object in $\mathcal{D}$, since this is the fusion category which specifies the bond algebra from which the Hamiltonian is constructed.
-This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases.
+    This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases.
 
 ## Differences with the infinite case
 We can repeat the above calcalations also for an infinite system.
@@ -188,7 +185,7 @@ The `lattice` variable will change, as well as the MPS constructor and the algor
 ````julia
 lattice = InfiniteChain(1)
 init = InfiniteMPS([P], [V])
-inf_alg = VUMPS(; verbosity=2, tol=1e-7)
+inf_alg = VUMPS(; verbosity = 2, tol = 1e-7)
 ````
 
 Besides `VUMPS`, `IDMRG` and `IDMRG2` are as easy to run with the `A4Object` `BimoduleSector`.
