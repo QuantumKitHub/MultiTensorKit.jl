@@ -88,7 +88,7 @@ Similarly, excitations of an MPS are labeled by `BimoduleSector`s with the same 
 This is illustrated in the following figure.
 
 ```@raw html
-<img src="../img/anyonchain_excitation.svg" alt="" width="90%"/>
+<img src="../img/anyonchain_excitation.svg" alt="" width="70%"/>
 ```
 
 Here, $\mathcal{D}$ is the fusion category grading the physical space of the MPS, $\mathcal{R}$ is the right $\mathcal{D}$-module category grading the virtual space of the MPS.

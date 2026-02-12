@@ -208,7 +208,8 @@ By keeping track of the colorings and the directions of the arrows of the legs, 
 <img src="../img/Bmove_MF.svg" alt="" width="90%" class="color-invertible"/>
 ``` 
 
-where by $\mathbb{1}_j$ we mean the unit of $\mathcal{C}_j$.
+where by $\mathbb{1}_k$ we mean the unit of $\mathcal{C}_k$.
+Note how we keep the color subscripts for the dual object, but in reality they switch since the arrow direction is reversed.
 
 ### More on the topological data: gauge choices and distilling properties of the subcategories
 
