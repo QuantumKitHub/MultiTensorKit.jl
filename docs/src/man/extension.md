@@ -36,6 +36,7 @@ For this reason, the `TensorKitSectors.UnitStyle` trait is introduced to differe
 This trait is used to specialise certain functions within TensorKit (see below).
 `TensorKitSectors.allunits` is also introduced to return all the simple unit objects of the (multi)fusion category.
 This function must be defined for every multifusion category to be compatible with TensorKit.
+
 Via the fusion rules, the left and right units of all `BimoduleSector`s along with their duals are also extracted and cached.
 The fusion behavior that must be imposed for the entire `BimoduleSector` is the most general one that appears in the fusion between any two `BimoduleSector`s.
 In particular, if one of the diagonal fusion categories has fusion rules with multiplicities, then the entire `BimoduleSector` must be set to have `TensorKitSectors.FusionStyle(::Type{<:BimoduleSector}) = GenericFusion()`.
@@ -68,19 +69,28 @@ For multifusion categories, the latter function returns the space with the semis
 There, based on the index where a unit space is wished to be inserted, a `leftunitspace` or `rightunitspace` is added such that the resulting space remains consistent with the fusion rules of the multifusion category.
 Similarly, `TensorKit.removeunit` is used to remove unit spaces, and will explicitly check whether the space contains only unit objects of any color with `TensorKit.isunitspace`.
 
-# MultiTensorKit compatibility with MPSKit
+## MultiTensorKit compatibility with MPSKit
 
 This section will briefly explain the changes within MPSKit which are required to make it compatible with MultiTensorKit.
 For a more practical explanation, users are kindly guided towards the [Example section](@ref implementation).
 
 The main change within MPSKit is very similar to the fusion tree manipulations in TensorKit, namely the use of `leftunit` and `rightunit` to identify the correct unit object.
-In the case of MPSKit, trivial spaces are used everywhere, from the boundary of a finite MPS to the virtual spaces of a Hamiltonian written in MPO form.
-Additionally, multiple tensor contractions made use of braiding tensors to perform crossings of legs of the MPS/MPOs.
+In the case of MPSKit, trivial spaces are used everywhere, from the boundary of a finite matrix product state to the virtual spaces of a Hamiltonian written as an matrix product operator.
+Additionally, multiple tensor contractions made use of braiding tensors to perform crossings of legs of the MPSs/MPOs.
 Since no (half-)braiding is available for the `BimoduleSector`s, all algorithms had to be made planar, and thus all braiding tensors were removed.
-Since all braidings were trivial, this was dealt with by simply removing the braiding tensors and replacing the crossing of legs with a termination and reintroduction of the legs without crossing.
-This is achieved through `TensorKit.removeunit` and `TensorKit.insertleftunit`/`TensorKit.insertrightunit`, which remove and insert spaces with the correct unit object, respectively, based on the grading of neighboring vector spaces.
-At the level of the MPS, the correct unit object can be identified through the use of `leftunit` and `rightunit`.
+Since all braidings were trivial, this was dealt with by simply removing the braiding tensors and replacing the crossing of legs with a termination and reintroduction of the legs without crossing by aid of `removeunit`, `insertleftunit` and `insertrightunit`.
+
+At the level of the MPS, the correct unit object can be identified through the use of `leftunit(ψ::AbstractMPS)` and `rightunit(ψ::AbstractMPS)`.
 When the virtual space of the MPS is graded by a diagonal `BimoduleSector`, i.ea unitary fusion category, then these all coincide with the unique unit object of that fusion category.
 However, when the virtual space is graded by an off-diagonal `BimoduleSector`, i.e. a bimodule category, then the left and right units are different, and thus it is important to identify the correct one when performing MPS algorithms.
 For example, Hamiltonians should always have the same coloring as the right unit of the MPS, since they are contracted at the physical level of the MPS.
 Similarly, excitations of an MPS are labeled by `BimoduleSector`s with the same coloring as the left unit of the MPS, since the auxiliary charge leg of the excitation is attached on the other side of the MPS to the virtual level.
+This is illustrated in the following figure.
+
+```@raw html
+<img src="../img/anyonchain_excitation.svg" alt="" width="90%"/>
+```
+
+Here, $\mathcal{D}$ is the fusion category grading the physical space of the MPS, $\mathcal{R}$ is the right $\mathcal{D}$-module category grading the virtual space of the MPS.
+$\mathcal{E}$ is the Morita dual fusion category of $\mathcal{D}$ with respect to $\mathcal{R}$, which is the category labelling the excitations of the MPS.
+In this case, the left unit of the MPS is in $\mathcal{E}$, and the right unit in $\mathcal{D}$.
