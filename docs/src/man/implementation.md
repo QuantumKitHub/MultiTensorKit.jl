@@ -105,7 +105,7 @@ H1 = @mpoham sum(-2 * h1{i,j} for (i, j) in nearest_neighbours(lattice))
 H2 = @mpoham sum(h2{i,j} for (i, j) in nearest_neighbours(lattice))
 H3 = @mpoham sum(2im * h3{i,j} for (i, j) in nearest_neighbours(lattice))
 
-H = H1 + J1 * H2 + J3 * H3
+H = H1 + J1 * H2 + J2 * H3
 ````
 
 For the matrix product state, we will select $\mathsf{Vec}$ as the module category for now:
@@ -127,7 +127,7 @@ init_mps = FiniteMPS(L, P, V; left = Vb, right = Vb)
 We can now look to find the ground state of the Hamiltonian with two-site DMRG.
 We use this instead of the "usual" one-site DMRG because the two-site algorithm will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations.
 ````julia
-dmrg2alg = DMRG2(; verbosity = 2, tol = 1e-7, trscheme = truncbelow(1e-4))
+dmrg2alg = DMRG2(; verbosity = 2, tol = 1e-7, trscheme = trunctol(; atol = 1e-4))
 ψ, _ = find_groundstate(init_mps, H, dmrg2alg)
 ````
 The truncation scheme keyword argument is mandatory when calling `DMRG2` in MPSKit.
@@ -137,10 +137,12 @@ To run one-site DMRG anyway, use `DMRG` which does not require a truncation sche
 
 Now that we've found the ground state, we can compute the entanglement spectrum in the middle of the chain.
 ````julia
-spec = entanglement_spectrum(ψ, round(Int, L/2))
+entanglement_spectrum(ψ, round(Int, L/2))
 ````
-This returns a dictionary which maps the objects grading the virtual space to the singular values.
-In this case, there is one key corresponding to $\mathsf{Vec}$.
+This returns a `TensorKit.SectorVector` containing the singular values.
+This can be sliced to find the singular values corresponding to a particular simple object.
+More information on that can be found in the docstring of `MPSKit.entanglement_spectrum`.
+In this case, all singular values correspond to $\mathsf{Vec}$.
 We can also immediately return a plot of this data by the following:
 ````julia
 entanglementplot(ψ; site = round(Int, L/2))
@@ -172,12 +174,10 @@ This plot should be compared to [Lootens_2024; Figure 2](@cite).
 This can be repeated with other parameter values for $J_1$ and $J_2$ in the Hamiltonian to probe the $\mathsf{Rep(\mathbb{Z}_2 \times \mathbb{Z}_2)}$-symmetric or $\mathsf{Rep^\psi(A_4)}$ SPT phase.
 
 !!! note "Additional functions and keyword arguments"
-    Certain commonly used functions within MPSKit require extra keyword arguments to be compatible with multifusion MPS simulations.
+    Certain commonly used functions within MPSKit can pass extra keyword arguments compatible with multifusion MPS simulations.
     In particular, the keyword argument `sector` (note the lowercase "s") appears in 
-    - `excitations` with `QuasiparticleAnsatz`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix.
-    Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the charged excitations lie in the symmetry category $\mathcal{C} = \mathcal{D^*_M}$.
-    - `exact_diagonalization`: the `sector` keyword argument now requires an object in $\mathcal{D}$, since this is the fusion category which specifies the bond algebra from which the Hamiltonian is constructed.
-    This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases.
+    - `excitations` with `QuasiparticleAnsatz`: the sector is selected by adding an auxiliary space to the *domain* of each eigenvector of the transfer matrix. Since in a full contraction the domain of the eigenvector lies in the opposite side of the physical space (labeled by objects in $\mathcal{D} = \mathsf{Rep(A_4)}$), the excitations lie in the Morita dual category $\mathcal{E} = \mathcal{D^*_M}$. This will default to the unit of $\mathcal{E}$ if not specified.
+    - `exact_diagonalization`: the `sector` keyword argument now requires a simple object in $\mathcal{D}$, since this is the fusion category which specifies the bond algebra from which the Hamiltonian is constructed. This is equivalent to adding a charged leg on the leftmost (or rightmost) virtual space of the MPS in conventional MPS cases. This will default to the unit of $\mathcal{D}$ if not specified.
 
 ## Differences with the infinite case
 We can repeat the above calcalations also for an infinite system.
@@ -197,4 +197,4 @@ It is also clear that boundary terms do not play a role in this case.
     These are
     - `transfer_spectrum`: similar to `excitations`, the (partial) transfer matrix spectrum is selected by adding a charged auxiliary space to the transfer matrix eigenvectors.
     - `correlation_length`: since this function calls `transfer_spectrum`, the same logic applies.
-    - `excitations` in the infinite case also requires the keyword argument.
+    - `excitations` with `QuasiparticleAnsatz`.
