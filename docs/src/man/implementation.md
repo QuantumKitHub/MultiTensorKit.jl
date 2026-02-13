@@ -5,7 +5,7 @@ In particular, we will be making a generalised anyonic spin chain.
 We will demonstrate how to reproduce the entanglement spectra found in [Lootens_2024](@cite).
 The model considered there is a spin-1 Heisenberg model with additional terms to break the usual $\mathsf{U_1}$ symmetry to $\mathsf{Rep(A_4)}$, while having a non-trivial phase diagram and relatively easy Hamiltonian to write down.
 
-This will be done with the `A4Object = BimoduleSector{A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep(A_4)}$.
+This will be done with the `A4Object = BimoduleSector{:A4}` `Sector`, which is the multifusion category which contains the structure of the module categories over $\mathsf{Rep(A_4)}$.
 Since there are 7 module categories, `A4Object` is a $r=7$ multifusion category.
 There are 3 fusion categories up to equivalence:
 - ``\mathsf{Vec_{A_4}}``: the category of $\mathsf{A_4}$-graded vector spaces. The group $\mathsf{A}_4$ is order $4!/2 = 12$ and has thus 12 simple objects.
@@ -121,17 +121,18 @@ init_mps = FiniteMPS(L, P, V; left = Vb, right = Vb)
 ````
 
 !!! warning "Important"
-    We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place a trivial space of the `Sector`, which does not exist for any `BimoduleSector` due to the semisimple unit.
+    We must pass on a left and right virtual space to the keyword arguments `left` and `right` of the `FiniteMPS` constructor, since these would by default try to place the unit space of the `Sector`, which for any `BimoduleSector` consists of the semisimple unit. As of now, this will error at the level of the N-symbol call as the colors of the various components do not all match.
 
 ## Two-site DMRG and the entanglement spectrum
 We can now look to find the ground state of the Hamiltonian with two-site DMRG.
 We use this instead of the "usual" one-site DMRG because the two-site algorithm will smartly fill up the blocks of the local tensor during the sweep, allowing one to initialise as a product state in one block and more likely avoid local minima, a common occurence in symmetric tensor network simulations.
 ````julia
-dmrg2alg = DMRG2(; verbosity = 2, tol = 1e-7, trscheme = trunctol(; atol = 1e-4))
+dmrg2alg = DMRG2(; verbosity = 2, tol = 1e-7, trscheme = trunctol(; atol = 1e-4 / sqrt(dim(M))))
 ψ, _ = find_groundstate(init_mps, H, dmrg2alg)
 ````
 The truncation scheme keyword argument is mandatory when calling `DMRG2` in MPSKit.
 Here, we choose to truncate such that all singular values are larger than $10^{-4}$, while setting the default tolerance for convergence to $10^{-7}$.
+The extra factor is required to cancel the normalisation of the singular values by the quantum dimensions.
 More information on this can be found in the [MPSKit](https://github.com/QuantumKitHub/MPSKit.jl) documentation.
 To run one-site DMRG anyway, use `DMRG` which does not require a truncation scheme.
 
@@ -162,7 +163,7 @@ module_numlabels(i) = MultiTensorKit._numlabels(A4Object, i, 6)
 V = Vect[A4Object]((i, 6, label) => D for label in 1:module_numlabels(i))
 Vb = Vect[A4Object](first(sectors(V)) => 1) # not all charges on boundary, play around with what is there
 ````
-#TODO: fix the figure
+
 ```@raw html
 <img src="../img/A4_sym_entanglement_spectrum.svg" alt="" width="90%"/>
 ``` 
@@ -171,7 +172,7 @@ The plot shows the entanglement spectra of the various dual models in the middle
 Every subtitle also mentions the memory required to store the same middle ground state tensor.
 This plot should be compared to [Lootens_2024; Figure 2](@cite).
 
-This can be repeated with other parameter values for $J_1$ and $J_2$ in the Hamiltonian to probe the $\mathsf{Rep(\mathbb{Z}_2 \times \mathbb{Z}_2)}$-symmetric or $\mathsf{Rep^\psi(A_4)}$ SPT phase.
+This can be repeated with other parameter values for $J_1$ and $J_2$ in the Hamiltonian to probe the $\mathbb{Z}_2 \times \mathbb{Z}_2$-symmetric or $A_4$ SPT phase.
 
 !!! note "Additional functions and keyword arguments"
     Certain commonly used functions within MPSKit can pass extra keyword arguments compatible with multifusion MPS simulations.
