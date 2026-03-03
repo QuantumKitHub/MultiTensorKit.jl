@@ -1,14 +1,20 @@
+using TensorKitSectors
+# @isdefined(TestSetup) || include("setup.jl")
+# using .TestSetup
+testsuite_path = joinpath(
+    dirname(dirname(pathof(TensorKitSectors))), # TensorKitSectors root
+    "test", "testsuite.jl"
+)
+include(testsuite_path)
+using .SectorTestSuite
+
 using MultiTensorKit
-using TensorKitSectors, TensorKit
 using Test, TestExtras
-using Random
-using LinearAlgebra: LinearAlgebra
+# using TensorKit
+# using LinearAlgebra: LinearAlgebra
 
 const MTK = MultiTensorKit
-const TK = TensorKit
-
-@isdefined(TestSetup) || include("setup.jl")
-using .TestSetup
+# const TK = TensorKit
 
 I = A4Object
 Istr = TensorKitSectors.type_repr(I)
@@ -17,29 +23,8 @@ r = size(I)
 println("----------------------")
 println("|    Sector tests    |")
 println("----------------------")
-
-@testset "$Istr Basic type properties" verbose = true begin
-    @test eval(Meta.parse(sprint(show, I))) == I
-    @test eval(Meta.parse(TensorKitSectors.type_repr(I))) == I
-end
-
-@testset "$Istr: Value iterator" begin
-    @test eltype(values(I)) == I
-    @test_throws ArgumentError unit(I)
-    sprev = I(1, 1, 1) # first in SectorValues
-    for (i, s) in enumerate(values(I))
-        @test !isless(s, sprev) # confirm compatibility with sort order
-        @test s == @constinferred (values(I)[i])
-        @test findindex(values(I), s) == i
-        sprev = s
-        i >= 10 && break
-    end
-    @test I(1, 1, 1) == first(values(I))
-    @test (@constinferred findindex(values(I), I(1, 1, 1))) == 1
-    for s in collect(values(I))
-        @test (@constinferred values(I)[findindex(values(I), s)]) == s
-    end
-end
+@info "blablablabla"
+SectorTestSuite.test_sector(I)
 
 @testset "$Istr ($i, $j) basic properties" for i in 1:r, j in 1:r
     Cii_obs = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
@@ -50,54 +35,30 @@ end
 
     if i == j
         @testset "Basic fusion properties" begin
-            s = rand(Cii_obs, 3)
-            @test eval(Meta.parse(sprint(show, s[1]))) == s[1]
-            @test @constinferred(hash(s[1])) == hash(deepcopy(s[1]))
-            @test isunit(@constinferred(unit(s[1])))
+            @test isunit(@testinferred(unit(c)))
             u = I.(i, i, MTK._get_dual_cache(I)[1][i])
-            @test u == @constinferred(leftunit(u)) == @constinferred(rightunit(u)) ==
-                @constinferred(unit(u))
-            @test isunit(@constinferred(unit(s[1])))
-            @constinferred dual(s[1])
-            @test dual(s[1]) == I.(i, i, MTK._get_dual_cache(I)[2][i, i][s[1].label])
-            @constinferred dim(s[1])
-            @constinferred frobenius_schur_phase(s[1])
-            @constinferred frobenius_schur_indicator(s[1])
-            @constinferred Nsymbol(s...)
-            @constinferred Asymbol(s...)
-            @constinferred Bsymbol(s...)
-            F = @constinferred Fsymbol(s..., s...)
-            @test eltype(F) <: @testinferred sectorscalartype(I)
+            @test u == @testinferred(leftunit(u)) == @testinferred(rightunit(u)) ==
+                @testinferred(unit(u))
+            @test isunit(@testinferred(unit(c)))
+            @test dual(c) == I.(i, i, MTK._get_dual_cache(I)[2][i, i][c.label])
         end
     else
         @testset "Basic module properties" begin
-            @test eval(Meta.parse(sprint(show, m))) == m
-            @test @constinferred(hash(m)) == hash(deepcopy(m))
-
             @test isunit(m) == false
             @test isunit(mop) == false
-            @test (isunit(@constinferred(leftunit(m))) && isunit(@constinferred(rightunit(m))))
+            @test (isunit(@testinferred(leftunit(m))) && isunit(@testinferred(rightunit(m))))
             @test unit(c) == leftunit(m) == rightunit(mop)
             @test unit(d) == rightunit(m) == leftunit(mop)
             @test_throws DomainError unit(m)
             @test_throws DomainError unit(mop)
-
-            @constinferred dual(m)
             @test dual(m) == I.(j, i, MTK._get_dual_cache(I)[2][i, j][m.label])
-            @test dual(dual(m)) == m
-
-            @constinferred dim(m)
-            @constinferred frobenius_schur_phase(m)
-            @constinferred frobenius_schur_indicator(m)
-            @constinferred Bsymbol(m, mop, c)
-            @constinferred Fsymbol(mop, m, mop, mop, d, c)
         end
 
         @testset "$Istr Fusion rules" begin
             argerr = ArgumentError("invalid fusion channel")
             # forbidden fusions
             for obs in [(c, d), (d, c), (m, m), (mop, mop), (d, m), (m, c), (mop, d), (c, mop)]
-                @test_throws AssertionError("a.j == b.i") isempty(⊗(obs...))
+                @test isempty(⊗(obs...))
                 @test_throws argerr Nsymbol(obs..., rand([c, m, mop, d]))
             end
 
@@ -119,12 +80,16 @@ println("-----------------------------")
 println("|    F-symbol data tests    |")
 println("-----------------------------")
 
+# explicitly test everything related to F-symbols
+# other option is to edit smallset to sample more
 for i in 1:r, j in 1:r
     @testset "Unitarity of $Istr F-move ($i, $j)" begin
         if i == j
             @testset "Unitarity of fusion F-move ($i, $j)" begin
                 fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-                @test unitarity_test(fusion_objects, fusion_objects, fusion_objects)
+                for a in fusion_objects, b in fusion_objects, c in fusion_objects
+                    @test SectorTestSuite.F_unitarity_test(a, b, c)
+                end
             end
         end
 
@@ -135,31 +100,41 @@ for i in 1:r, j in 1:r
 
         # C x C x M -> M or D x D x Mop -> Mop
         @testset "Unitarity of left module F-move ($i, $j)" begin
-            @test unitarity_test(left_fusion_objects, left_fusion_objects, mod_objects)
+            for a in left_fusion_objects, b in left_fusion_objects, A in mod_objects
+                @test SectorTestSuite.F_unitarity_test(a, b, A)
+            end
         end
 
         # M x D x D -> M or Mop x C x C -> Mop
         @testset "Unitarity of right module F-move ($i, $j)" begin
-            @test unitarity_test(mod_objects, right_fusion_objects, right_fusion_objects)
+            for A in mod_objects, b in right_fusion_objects, c in right_fusion_objects
+                @test SectorTestSuite.F_unitarity_test(A, b, c)
+            end
         end
 
         # C x M x D -> M or D x Mop x C -> Mop
         @testset "Unitarity of bimodule F-move ($i, $j)" begin
-            @test unitarity_test(left_fusion_objects, mod_objects, right_fusion_objects)
+            for a in left_fusion_objects, A in mod_objects, α in right_fusion_objects
+                @test SectorTestSuite.F_unitarity_test(a, A, α)
+            end
         end
 
         @testset "Unitarity of mixed module F-move ($i, $j) and opposite ($j, $i)" begin
             modop_objects = I.(j, i, MTK._get_dual_cache(I)[2][j, i])
 
             # C x M x Mop -> C or D x Mop x M -> D
-            @test unitarity_test(left_fusion_objects, mod_objects, modop_objects)
             # M x Mop x C -> C or Mop x M x D -> D
-            @test unitarity_test(mod_objects, modop_objects, left_fusion_objects)
             # Mop x C x M -> D or M x D x Mop -> C
-            @test unitarity_test(modop_objects, left_fusion_objects, mod_objects)
+            for a in left_fusion_objects, A in mod_objects, Aop in modop_objects
+                @test SectorTestSuite.F_unitarity_test(a, A, Aop)
+                @test SectorTestSuite.F_unitarity_test(A, Aop, a)
+                @test SectorTestSuite.F_unitarity_test(Aop, a, A)
+            end
 
             # M x Mop x M -> M or Mop x M x Mop -> Mop
-            @test unitarity_test(mod_objects, modop_objects, mod_objects)
+            for A in mod_objects, Aop in modop_objects
+                @test SectorTestSuite.F_unitarity_test(A, Aop, A)
+            end
         end
     end
 end
