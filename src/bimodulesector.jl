@@ -66,7 +66,8 @@ TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()
 TensorKitSectors.sectorscalartype(::Type{A4Object}) = ComplexF64
 
 function TensorKitSectors.:⊗(a::I, b::I) where {I <: BimoduleSector}
-    @assert a.j == b.i
+    # @assert a.j == b.i
+    a.j == b.i || return I[]
     Ncache = _get_Ncache(I)[a.i, a.j, b.j]
     return I[
         I(a.i, b.j, c_l) for (a_l, b_l, c_l) in keys(Ncache)
