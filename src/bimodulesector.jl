@@ -280,36 +280,3 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I, f::I) where {I <
     colordict = _get_Fcache(I)[i, j, k, l]
     return get!(colordict, (a.label, b.label, c.label, d.label, e.label, f.label), zero_array)
 end
-
-# interface with TensorKit where necessary
-#-----------------------------------------
-
-# TODO: can remove this once the otimes assert is removed
-function TensorKit.fuse(V₁::GradedSpace{I}, V₂::GradedSpace{I}) where {I <: BimoduleSector}
-    dims = TensorKit.SectorDict{I, Int}()
-    for a in sectors(V₁), b in sectors(V₂)
-        a.j == b.i || continue # skip if not compatible
-        for c in a ⊗ b
-            dims[c] = get(dims, c, 0) + Nsymbol(a, b, c) * dim(V₁, a) * dim(V₂, b)
-        end
-    end
-    return typeof(V₁)(dims)
-end
-
-#TODO: these might not be necessary anymore after TensorKit#291
-# check after BlockTensorKit#38
-
-# function TensorKit.unitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-#     @assert !isempty(S) "Cannot determine type of empty space"
-#     return SumSpace(oneunit(first(S.spaces))) # assuming diagonal SumSpace (like in MPSKit)
-# end
-
-# function rightunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-#     @assert !isempty(S) "Cannot determine type of empty space"
-#     return SumSpace(rightunitspace(first(S.spaces)))
-# end
-
-# function leftunitspace(S::SumSpace{<:GradedSpace{<:BimoduleSector}})
-#     @assert !isempty(S) "Cannot determine type of empty space"
-#     return SumSpace(leftunitspace(first(S.spaces)))
-# end

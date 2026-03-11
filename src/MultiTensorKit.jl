@@ -7,9 +7,6 @@ using Pkg
 using Pkg.Artifacts
 using TensorKitSectors
 
-using TensorKit
-import TensorKit: hasblock, dim
-
 include("bimodulesector.jl")
 
 end
