@@ -2,8 +2,9 @@ module MultiTensorKit
 
 export BimoduleSector, A4Object
 
-using JSON3
-using Artifacts
+using DelimitedFiles
+using Pkg
+using Pkg.Artifacts
 using TensorKitSectors
 
 include("bimodulesector.jl")
