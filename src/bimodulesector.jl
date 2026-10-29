@@ -1,80 +1,118 @@
+const ImplementedBimoduleSectors = [:A4]
+
 struct BimoduleSector{Name} <: Sector
     i::Int
     j::Int
     label::Int
-end
-BimoduleSector{Name}(data::NTuple{3,Int}) where {Name} = BimoduleSector{Name}(data...)
-const A4Object = BimoduleSector{:A4}
-
-# Utility implementations
-# -----------------------
-function Base.isless(a::I, b::I) where {I<:BimoduleSector}
-    return isless((a.i, a.j, a.label), (b.i, b.j, b.label))
-end
-Base.hash(a::BimoduleSector, h::UInt) = hash(a.i, hash(a.j, hash(a.label, h)))
-function Base.convert(::Type{BimoduleSector{Name}}, d::NTuple{3,Int}) where {Name}
-    return BimoduleSector{Name}(d...)
-end
-
-Base.IteratorSize(::Type{SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
-
-# TODO: generalize?
-# TODO: numlabels?
-function Base.iterate(iter::SectorValues{A4Object}, (I, label)=(1, 1))
-    I > 12 * 12 && return nothing
-    i, j = CartesianIndices((12, 12))[I].I
-    maxlabel = numlabels(A4Object, i, j)
-    return if label > maxlabel
-        iterate(iter, (I + 1, 1))
-    else
-        A4Object(i, j, label), (I, label + 1)
+    function BimoduleSector{Name}(i::Int, j::Int, label::Int) where {Name}
+        Name ∈ ImplementedBimoduleSectors ||
+            throw(ArgumentError("BimoduleSector $Name not implemented"))
+        i <= size(BimoduleSector{Name}) && j <= size(BimoduleSector{Name}) ||
+            throw(DomainError("object outside the matrix $Name"))
+        return label <= _numlabels(BimoduleSector{Name}, i, j) ? new{Name}(i, j, label) :
+            throw(DomainError("label outside category $Name($i, $j)"))
     end
 end
 
+BimoduleSector{Name}(data::NTuple{3, Int}) where {Name} = BimoduleSector{Name}(data...)
+BimoduleSectorName(::Type{BimoduleSector{Name}}) where {Name} = Name
+const A4Object = BimoduleSector{:A4}
+
+Base.convert(::Type{<:BimoduleSector{Name}}, labels::NTuple{3, Int}) where {Name} = BimoduleSector{Name}(labels...)
+
+function Base.show(io::IO, a::BimoduleSector{Name}) where {Name}
+    if get(io, :typeinfo, nothing) === typeof(a)
+        print(io, (a.i, a.j, a.label))
+    else
+        print(io, typeof(a), (a.i, a.j, a.label))
+    end
+    return nothing
+end
+
+# Utility implementations
+# -----------------------
+function Base.isless(a::I, b::I) where {I <: BimoduleSector}
+    return isless((a.i, a.j, a.label), (b.i, b.j, b.label))
+end
+Base.hash(a::BimoduleSector, h::UInt) = hash(a.i, hash(a.j, hash(a.label, h)))
+function Base.convert(::Type{BimoduleSector{Name}}, d::NTuple{3, Int}) where {Name}
+    return BimoduleSector{Name}(d...)
+end
+
+Base.size(::Type{A4Object}) = 7
+
+Base.IteratorSize(::Type{<:SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
+
+function Base.iterate(iter::SectorValues{<:BimoduleSector}, (I, label) = (1, 1))
+    A = eltype(iter)
+    s = size(A)
+    I > s * s && return nothing
+    i, j = CartesianIndices((s, s))[I].I
+    maxlabel = _numlabels(A, i, j)
+    return if label > maxlabel
+        iterate(iter, (I + 1, 1))
+    else
+        A(i, j, label), (I, label + 1)
+    end
+end
+
+function Base.length(::SectorValues{I}) where {I <: BimoduleSector}
+    s = size(I)
+    return sum(_numlabels(I, i, j) for i in 1:s, j in 1:s)
+end
+
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
-TensorKitSectors.BraidingStyle(::Type{A4Object}) = NoBraiding()
+TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()
+TensorKitSectors.sectorscalartype(::Type{A4Object}) = ComplexF64
 
-function TensorKitSectors.:⊗(a::A4Object, b::A4Object)
-    @assert a.j == b.i
-    Ncache = _get_Ncache(A4Object)[a.i, a.j, b.j]
-    return A4Object[A4Object(a.i, b.j, c_l)
-                    for (a_l, b_l, c_l) in keys(Ncache)
-                    if (a_l == a.label && b_l == b.label)]
+function TensorKitSectors.:⊗(a::I, b::I) where {I <: BimoduleSector}
+    # @assert a.j == b.i
+    a.j == b.i || return I[]
+    Ncache = _get_Ncache(I)[a.i, a.j, b.j]
+    return I[
+        I(a.i, b.j, c_l) for (a_l, b_l, c_l) in keys(Ncache)
+            if (a_l == a.label && b_l == b.label)
+    ]
 end
 
-function _numlabels(::Type{A4Object}, i, j)
-    return Ncache = _get_Ncache(A4Object)
+function _numlabels(::Type{T}, i, j) where {T <: BimoduleSector}
+    return length(_get_dual_cache(T)[2][i, j])
 end
+
+# User-friendly functions
+# -------------------
+#TODO: add functions to identify categories
 
 # Data from files
 # ---------------
 const artifact_path = joinpath(artifact"fusiondata", "MultiTensorKit.jl-data-v0.1.5")
 
-function extract_Nsymbol(::Type{A4Object})
-    filename = joinpath(artifact_path, "A4", "Nsymbol.json")
-    isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for $Name"))
-    json_string = read(filename, String)
-    Narray = copy(JSON3.read(json_string))
-    return map(reshape(Narray, 12, 12, 12)) do x
-        y = Dict{NTuple{3,Int},Int}()
-        for (k, v) in x
-            a, b, c = parse.(Int, split(string(k)[2:(end - 1)], ", "))
-            y[(a, b, c)] = v
-        end
-        return y
+function extract_Nsymbol(::Type{I}) where {I <: BimoduleSector}
+    name = string(BimoduleSectorName(I))
+    filename = joinpath(artifact_path, name, "Nsymbol.txt")
+    isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for $name"))
+    Narray = readdlm(filename) # matrix with 7 columns
+
+    data_dict = Dict{NTuple{3, Int}, Dict{NTuple{3, Int}, Int}}()
+    for row in eachrow(Narray)
+        i, j, k, a, b, c, N = Int.(@view(row[1:size(I)]))
+        colordict = get!(data_dict, (i, j, k), Dict{NTuple{3, Int}, Int}())
+        push!(colordict, (a, b, c) => N)
     end
+
+    return data_dict
 end
 
-const Ncache = IdDict{Type{<:BimoduleSector},Array{Dict{NTuple{3,Int},Int},3}}()
+const Ncache = IdDict{Type{<:BimoduleSector}, Dict{NTuple{3, Int}, Dict{NTuple{3, Int}, Int}}}()
 
-function _get_Ncache(::Type{T}) where {T<:BimoduleSector}
+function _get_Ncache(::Type{T}) where {T <: BimoduleSector}
     global Ncache
     return get!(Ncache, T) do
         return extract_Nsymbol(T)
     end
 end
 
-function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:A4Object}
+function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I <: BimoduleSector}
     # TODO: should this error or return 0?
     (a.j == b.i && a.i == c.i && b.j == c.j) ||
         throw(ArgumentError("invalid fusion channel"))
@@ -82,107 +120,163 @@ function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I<:A4Object}
     return get(_get_Ncache(I)[i, j, k], (a.label, b.label, c.label), 0)
 end
 
-# TODO: can we define dual for modules?
-const Dualcache = IdDict{Type{<:BimoduleSector},Vector{Tuple{Int,Vector{Int}}}}()
+const Dualcache = IdDict{Type{<:BimoduleSector}, Tuple{Vector{Int64}, Matrix{Vector{Int64}}}}()
 
-function _get_dual_cache(::Type{T}) where {T<:BimoduleSector}
+function _get_dual_cache(::Type{T}) where {T <: BimoduleSector}
     global Dualcache
     return get!(Dualcache, T) do
         return extract_dual(T)
     end
 end
 
-function extract_dual(::Type{A4Object})
-    N = _get_Ncache(A4Object)
-    ncats = size(N, 1)
-    return map(1:ncats) do i
-        Niii = N[i, i, i]
-        nobj = maximum(first, keys(Niii))
+function extract_dual(::Type{I}) where {I <: BimoduleSector}
+    N = _get_Ncache(I)
+    ncats = size(I)
+    Is = zeros(Int, ncats)
 
-        # find identity object:
-        # I x I -> I, a x I -> a, I x a -> a
-        I = findfirst(1:nobj) do u
-            get(Niii, (u, u, u), 0) == 1 || return false
-            for j in 1:nobj
-                get(Niii, (j, u, j), 0) == 1 || return false
-                get(Niii, (u, j, j), 0) == 1 || return false
+    map(1:ncats) do i
+        Niii = N[i, i, i]
+        nobji = maximum(first, keys(N[i, i, i]))
+        # want to return a leftunit and rightunit for each entry in multifusion cat
+        # leftunit/rightunit needs to at least be the unit object within a fusion cat
+        Is[i] = findfirst(1:nobji) do a
+            get(Niii, (a, a, a), 0) == 1 || return false # I x I -> I
+            for othera in 1:nobji
+                get(Niii, (othera, a, othera), 0) == 1 || return false # a x I -> a
+                get(Niii, (a, othera, othera), 0) == 1 || return false # I x a -> a
+            end
+
+            # check leftunit
+            map(1:ncats) do j
+                nobjj = maximum(first, keys(N[j, j, j]))
+                for b in 1:nobjj
+                    get(N[i, j, j], (a, b, b), 0) == 1 || return false # I = leftunit(b)
+                end
+            end
+
+            # check rightunit
+            map(1:ncats) do k
+                nobjk = maximum(first, keys(N[k, k, k]))
+                for c in 1:nobjk
+                    get(N[k, i, k], (c, a, c), 0) == 1 || return false # I = rightunit(c)
+                end
             end
             return true
         end
-
-        # find duals
-        # a x abar -> I
-        duals = map(1:nobj) do j
-            return findfirst(1:nobj) do k
-                return get(Niii, (j, k, I), 0) == 1
-            end
-        end
-
-        return I, duals
     end
-end
 
-function Base.one(a::BimoduleSector)
-    a.i == a.j || error("don't know how to define one for modules")
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][1])
-end
+    allduals = Matrix{Vector{Int}}(undef, ncats, ncats) # ncats square matrix of vectors
+    for i in 1:ncats
+        nobji = maximum(first, keys(N[i, i, i]))
+        for j in 1:ncats
+            allduals[i, j] = Int[]
 
-function Base.conj(a::BimoduleSector)
-    a.i == a.j || error("don't know how to define dual for modules")
-    return A4Object(a.i, a.i, _get_dual_cache(typeof(a))[a.i][2][a.label])
-end
-
-function extract_Fsymbol(::Type{A4Object})
-    return mapreduce((x, y) -> cat(x, y; dims=1), 1:12) do i
-        filename = joinpath(artifact_path, "A4", "Fsymbol_$i.json")
-        @assert isfile(filename) "cannot find $filename"
-        json_string = read(filename, String)
-        Farray_part = copy(JSON3.read(json_string))
-        return map(enumerate(Farray_part[Symbol(i)])) do (I, x)
-            j, k, l = Tuple(CartesianIndices((12, 12, 12))[I])
-            y = Dict{NTuple{6,Int},Array{ComplexF64,4}}()
-            for (key, v) in x
-                a, b, c, d, e, f = parse.(Int, split(string(key)[2:(end - 1)], ", "))
-                a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = A4Object.(((i, j, a), (j, k, b),
-                                                                (k, l, c), (i, l, d),
-                                                                (i, k, e), (j, l, f)))
-                result = Array{ComplexF64,4}(undef,
-                                             (Nsymbol(a_ob, b_ob, e_ob),
-                                              Nsymbol(e_ob, c_ob, d_ob),
-                                              Nsymbol(b_ob, c_ob, f_ob),
-                                              Nsymbol(a_ob, f_ob, d_ob)))
-                map!(result, reshape(v, size(result))) do cmplxdict
-                    return complex(cmplxdict[:re], cmplxdict[:im])
-                end
-
-                y[(a, b, c, d, e, f)] = result
+            nobjj = maximum(first, keys(N[j, j, j]))
+            # the nested vectors contain the duals of the objects in 𝒞_ij, which are in C_ji
+            Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> C_ii
+            Njij = N[j, i, j] # 𝒞_ji x 𝒞_ij -> C_jj
+            for i_ob in 1:nobji, j_ob in 1:nobjj
+                get(Niji, (i_ob, j_ob, Is[i]), 0) == 1 || continue # leftunit(c_ij) ∈ c_ij x c_ji
+                get(Njij, (j_ob, i_ob, Is[j]), 0) == 1 || continue # rightunit(c_ij) ∈ c_ji x c_ij
+                push!(allduals[i, j], j_ob)
             end
         end
     end
+    return Is, allduals
 end
 
-const Fcache = IdDict{Type{<:BimoduleSector},
-                      Array{Dict{NTuple{6,Int},Array{ComplexF64,4}},4}}()
+function TensorKitSectors.unit(a::BimoduleSector)
+    a.i == a.j || throw(DomainError("unit of module category ($(a.i), $(a.j)) of $(typeof(a)) is ill-defined"))
+    return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
+end
 
-function _get_Fcache(::Type{T}) where {T<:BimoduleSector}
+function TensorKitSectors.allunits(::Type{I}) where {I <: BimoduleSector}
+    s = size(I)
+    return I[I(i, i, _get_dual_cache(I)[1][i]) for i in 1:s]
+end
+
+function TensorKitSectors.unit(::Type{<:BimoduleSector})
+    throw(ArgumentError("unit of Type BimoduleSector doesn't exist"))
+end
+
+function TensorKitSectors.leftunit(a::BimoduleSector)
+    return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
+end
+
+function TensorKitSectors.rightunit(a::BimoduleSector)
+    return typeof(a)(a.j, a.j, _get_dual_cache(typeof(a))[1][a.j])
+end
+
+function TensorKitSectors.dual(a::BimoduleSector)
+    return typeof(a)(a.j, a.i, _get_dual_cache(typeof(a))[2][a.i, a.j][a.label])
+end
+
+function extract_Fsymbol(::Type{I}) where {I <: BimoduleSector}
+    result = Dict{NTuple{4, Int}, Dict{NTuple{6, Int}, Array{ComplexF64, 4}}}()
+    name = string(BimoduleSectorName(I))
+    filename = joinpath(artifact_path, name, "Fsymbol.txt")
+    @assert isfile(filename) "cannot find $filename"
+
+    Farray = readdlm(filename)
+    for ((i, j, k, l), colordict) in convert_Fs(Farray)
+        result[(i, j, k, l)] = Dict{NTuple{6, Int}, Array{ComplexF64, 4}}()
+        for ((a, b, c, d, e, f), Fvals) in colordict
+            a_ob, b_ob, c_ob, d_ob, e_ob, f_ob = I.(
+                ((i, j, a), (j, k, b), (k, l, c), (i, l, d), (i, k, e), (j, l, f))
+            )
+            result[(i, j, k, l)][(a, b, c, d, e, f)] = zeros(
+                ComplexF64, Nsymbol(a_ob, b_ob, e_ob), Nsymbol(e_ob, c_ob, d_ob),
+                Nsymbol(b_ob, c_ob, f_ob), Nsymbol(a_ob, f_ob, d_ob)
+            )
+            for (K, v) in Fvals
+                result[(i, j, k, l)][(a, b, c, d, e, f)][K] = v
+            end
+        end
+    end
+    return result
+end
+
+function convert_Fs(Farray_part::Matrix{Float64}) # Farray_part is a matrix with 16 columns
+    data_dict = Dict{NTuple{4, Int}, Dict{NTuple{6, Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}}()
+    # want to make a Dict with keys (i,j,k,l) and vals
+    # a Dict with keys (a,b,c,d,e,f) and vals
+    # a pair of (mu, nu, rho, sigma) and the F value
+    for row in eachrow(Farray_part)
+        i, j, k, l, a, b, c, d, e, f, mu, nu, rho, sigma = Int.(@view(row[1:14]))
+        v = complex(row[15], row[16])
+        colordict = get!(
+            data_dict, (i, j, k, l), Dict{NTuple{6, Int}, Vector{Pair{CartesianIndex{4}, ComplexF64}}}()
+        )
+        Fdict = get!(
+            colordict, (a, b, c, d, e, f), Vector{Pair{CartesianIndex{4}, ComplexF64}}()
+        )
+        push!(Fdict, CartesianIndex(mu, nu, rho, sigma) => v)
+    end
+    return data_dict
+end
+
+const Fcache = IdDict{Type{<:BimoduleSector}, Dict{NTuple{4, Int64}, Dict{NTuple{6, Int64}, Array{ComplexF64, 4}}}}()
+
+function _get_Fcache(::Type{T}) where {T <: BimoduleSector}
     global Fcache
     return get!(Fcache, T) do
         return extract_Fsymbol(T)
     end
 end
 
-function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I,
-                                  f::I) where {I<:A4Object}
-    # TODO: should this error or return 0?
-    (a.j == b.i && b.j == c.i && a.i == d.i && c.j == d.j &&
-     a.i == e.i && b.j == e.j && f.i == a.j && f.j == c.j) ||
-        throw(ArgumentError("invalid fusion channel"))
+function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I, f::I) where {I <: BimoduleSector}
+    # required to keep track of multiplicities where F-move is partially unallowed
+    # also deals with invalid fusion channels
+    Nabe = Nsymbol(a, b, e)
+    Necd = Nsymbol(e, c, d)
+    Nbcf = Nsymbol(b, c, f)
+    Nafd = Nsymbol(a, f, d)
+
+    zero_array = zeros(sectorscalartype(I), Nabe, Necd, Nbcf, Nafd)
+    Nabe > 0 && Necd > 0 && Nbcf > 0 && Nafd > 0 ||
+        return zero_array
 
     i, j, k, l = a.i, a.j, b.j, c.j
-    return get(_get_Fcache(I)[i, j, k, l],
-               (a.label, b.label, c.label, d.label, e.label, f.label)) do
-        return zeros(sectorscalartype(A4Object),
-                     (Nsymbol(a, b, e), Nsymbol(e, c, d), Nsymbol(b, c, f),
-                      Nsymbol(a, f, d)))
-    end
+    colordict = _get_Fcache(I)[i, j, k, l]
+    return get!(colordict, (a.label, b.label, c.label, d.label, e.label, f.label), zero_array)
 end
