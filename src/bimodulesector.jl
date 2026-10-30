@@ -40,7 +40,7 @@ function Base.convert(::Type{BimoduleSector{Name}}, d::NTuple{3, Int}) where {Na
     return BimoduleSector{Name}(d...)
 end
 
-Base.size(::Type{A4Object}) = 7
+Base.size(I::Type{<:BimoduleSector}) = size(_get_dual_cache(I)[3], 1)
 
 Base.IteratorSize(::Type{<:SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 
@@ -57,10 +57,7 @@ function Base.iterate(iter::SectorValues{<:BimoduleSector}, (n, label) = (1, 1))
     end
 end
 
-function Base.length(::SectorValues{I}) where {I <: BimoduleSector}
-    s = size(I)
-    return sum(_numlabels(I, i, j) for i in 1:s, j in 1:s)
-end
+Base.length(::SectorValues{I}) where {I <: BimoduleSector} = sum(_get_dual_cache(I)[3])
 
 TensorKitSectors.FusionStyle(::Type{A4Object}) = GenericFusion()
 TensorKitSectors.BraidingStyle(::Type{<:BimoduleSector}) = NoBraiding()
@@ -77,7 +74,7 @@ function TensorKitSectors.:⊗(a::I, b::I) where {I <: BimoduleSector}
 end
 
 function _numlabels(::Type{T}, i, j) where {T <: BimoduleSector}
-    return length(_get_dual_cache(T)[2][i, j])
+    return _get_dual_cache(T)[3][i, j]
 end
 
 # User-friendly functions
@@ -103,6 +100,9 @@ function extract_Nsymbol(::Type{I}) where {I <: BimoduleSector}
         push!(colordict, (a, b, c) => N)
     end
 
+    ncats = maximum(maximum, keys(data_dict))
+    ncats == size(I) ||
+        throw(ArgumentError("Nsymbol data for $name has $ncats subcategories, but size($I) = $(size(I))"))
     return data_dict
 end
 
@@ -123,7 +123,7 @@ function TensorKitSectors.Nsymbol(a::I, b::I, c::I) where {I <: BimoduleSector}
     return get(_get_Ncache(I)[i, j, k], (a.label, b.label, c.label), 0)
 end
 
-const Dualcache = IdDict{Type{<:BimoduleSector}, Tuple{Vector{Int64}, Matrix{Vector{Int64}}}}()
+const Dualcache = IdDict{Type{<:BimoduleSector}, Tuple{Vector{Int64}, Matrix{Vector{Int64}}, Matrix{Int64}}}()
 
 function _get_dual_cache(::Type{T}) where {T <: BimoduleSector}
     global Dualcache
@@ -172,7 +172,7 @@ function extract_dual(::Type{I}) where {I <: BimoduleSector}
             return mbar
         end
     end
-    return Is, allduals
+    return Is, allduals, nobj
 end
 
 function TensorKitSectors.unit(a::BimoduleSector)
