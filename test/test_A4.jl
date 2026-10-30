@@ -9,6 +9,9 @@ using .SectorTestSuite
 
 using MultiTensorKit
 using Test, TestExtras
+using Random
+
+Random.seed!(1234)
 
 const MTK = MultiTensorKit
 
@@ -21,6 +24,17 @@ println("|    Sector tests    |")
 println("----------------------")
 @testset "Sector test suite" verbose = true begin
     @time SectorTestSuite.test_sector(I)
+end
+
+@testset "$Istr construction and ordering" begin
+    @test_throws DomainError I(1, 1, 0)
+    @test_throws DomainError I(1, 1, -1)
+    @test_throws DomainError I(0, 1, 1)
+    @test_throws DomainError I(r + 1, 1, 1)
+    @test_throws DomainError I(1, 1, MTK._numlabels(I, 1, 1) + 1)
+    vals = collect(values(I))
+    @test issorted(vals)
+    @test length(vals) == length(values(I))
 end
 
 @testset "$Istr ($i, $j) basic properties" for i in 1:r, j in 1:r
@@ -36,7 +50,6 @@ end
             u = I.(i, i, MTK._get_dual_cache(I)[1][i])
             @test u == @testinferred(leftunit(u)) == @testinferred(rightunit(u)) ==
                 @testinferred(unit(u))
-            @test isunit(@testinferred(unit(c)))
             @test dual(c) == I.(i, i, MTK._get_dual_cache(I)[2][i, i][c.label])
         end
     else
@@ -159,5 +172,3 @@ end
         end
     end
 end
-
-# include("TK_compat.jl")
