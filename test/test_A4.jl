@@ -50,7 +50,6 @@ end
             u = I.(i, i, MTK._get_dual_cache(I)[1][i])
             @test u == @testinferred(leftunit(u)) == @testinferred(rightunit(u)) ==
                 @testinferred(unit(u))
-            @test dual(c) == I.(i, i, MTK._get_dual_cache(I)[2][i, i][c.label])
         end
     else
         @testset "Basic module properties" begin
@@ -61,7 +60,6 @@ end
             @test unit(d) == rightunit(m) == leftunit(mop)
             @test_throws DomainError unit(m)
             @test_throws DomainError unit(mop)
-            @test dual(m) == I.(j, i, MTK._get_dual_cache(I)[2][i, j][m.label])
         end
 
         @testset "$Istr Fusion rules" begin
@@ -83,6 +81,15 @@ end
             @test_throws argerr Nsymbol(mop, m, c)
             @test_throws argerr Fsymbol(m, mop, m, mop, c, d)
         end
+    end
+end
+
+@testset "$Istr units and duals of all objects" begin
+    for a in values(I)
+        ā = dual(a)
+        @test dual(ā) == a
+        @test Nsymbol(a, ā, leftunit(a)) == 1
+        @test Nsymbol(ā, a, rightunit(a)) == 1
     end
 end
 
