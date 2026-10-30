@@ -180,9 +180,15 @@ function TensorKitSectors.unit(a::BimoduleSector)
     return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
 end
 
+TensorKitSectors.UnitStyle(::Type{<:BimoduleSector}) = GenericUnit()
+
 function TensorKitSectors.allunits(::Type{I}) where {I <: BimoduleSector}
-    s = size(I)
-    return I[I(i, i, _get_dual_cache(I)[1][i]) for i in 1:s]
+    Is = _get_dual_cache(I)[1]
+    return ntuple(i -> I(i, i, Is[i]), Val(size(I)))
+end
+
+function TensorKitSectors.isunit(a::BimoduleSector)
+    return a.i == a.j && a.label == _get_dual_cache(typeof(a))[1][a.i]
 end
 
 function TensorKitSectors.unit(::Type{<:BimoduleSector})
