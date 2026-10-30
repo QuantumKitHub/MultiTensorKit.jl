@@ -7,10 +7,11 @@ struct BimoduleSector{Name} <: Sector
     function BimoduleSector{Name}(i::Int, j::Int, label::Int) where {Name}
         Name ∈ ImplementedBimoduleSectors ||
             throw(ArgumentError("BimoduleSector $Name not implemented"))
-        1 <= i <= size(BimoduleSector{Name}) && 1 <= j <= size(BimoduleSector{Name}) ||
-            throw(DomainError("object outside the matrix $Name"))
+        r = size(BimoduleSector{Name})
+        (1 <= i <= r && 1 <= j <= r) ||
+            throw(DomainError((i, j), "subcategory outside the $r×$r matrix $Name"))
         return 1 <= label <= _numlabels(BimoduleSector{Name}, i, j) ? new{Name}(i, j, label) :
-            throw(DomainError("label outside category $Name($i, $j)"))
+            throw(DomainError(label, "label outside category $Name($i, $j)"))
     end
 end
 
