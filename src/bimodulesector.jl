@@ -74,6 +74,7 @@ end
 function _numlabels(::Type{T}, i, j) where {T <: BimoduleSector}
     return _get_dual_cache(T)[3][i, j]
 end
+_unitlabel(::Type{I}, i::Int) where {I <: BimoduleSector} = _get_dual_cache(I)[1][i]
 
 # User-friendly functions
 # -------------------
@@ -163,7 +164,7 @@ function extract_dual(::Type{I}) where {I <: BimoduleSector}
                 get(Niji, (m, n, Is[i]), 0) == 1 && # leftunit(m) in m x mbar
                     get(Njij, (n, m, Is[j]), 0) == 1 # rightunit(m) in mbar x m
             end
-            isnothing(mbar) && error("no dual found for $I($i, $j, $m)")
+            isnothing(mbar) && throw(ArgumentError("no dual found for $I($i, $j, $m)"))
             return mbar
         end
     end
@@ -172,7 +173,7 @@ end
 
 function TensorKitSectors.unit(a::BimoduleSector)
     a.i == a.j || throw(DomainError("unit of module category ($(a.i), $(a.j)) of $(typeof(a)) is ill-defined"))
-    return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
+    return typeof(a)(a.i, a.i, _unitlabel(typeof(a), a.i))
 end
 
 TensorKitSectors.UnitStyle(::Type{<:BimoduleSector}) = GenericUnit()
@@ -182,7 +183,7 @@ function TensorKitSectors.allunits(::Type{I}) where {I <: BimoduleSector}
 end
 
 function TensorKitSectors.isunit(a::BimoduleSector)
-    return a.i == a.j && a.label == _get_dual_cache(typeof(a))[1][a.i]
+    return a.i == a.j && a.label == _unitlabel(typeof(a), a.i)
 end
 
 function TensorKitSectors.unit(::Type{<:BimoduleSector})
@@ -190,11 +191,11 @@ function TensorKitSectors.unit(::Type{<:BimoduleSector})
 end
 
 function TensorKitSectors.leftunit(a::BimoduleSector)
-    return typeof(a)(a.i, a.i, _get_dual_cache(typeof(a))[1][a.i])
+    return typeof(a)(a.i, a.i, _unitlabel(typeof(a), a.i))
 end
 
 function TensorKitSectors.rightunit(a::BimoduleSector)
-    return typeof(a)(a.j, a.j, _get_dual_cache(typeof(a))[1][a.j])
+    return typeof(a)(a.j, a.j, _unitlabel(typeof(a), a.j))
 end
 
 function TensorKitSectors.dual(a::BimoduleSector)
