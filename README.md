@@ -26,8 +26,8 @@
 [ci-img]: https://github.com/QuantumKitHub/MultiTensorKit.jl/actions/workflows/Tests.yml/badge.svg
 [ci-url]: https://github.com/QuantumKitHub/MultiTensorKit.jl/actions/workflows/Tests.yml
 
-[pkgeval-img]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/T/MPSKit.svg
-[pkgeval-url]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/T/MPSKit.html
+[pkgeval-img]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/M/MultiTensorKit.svg
+[pkgeval-url]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/M/MultiTensorKit.html
 
 [aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
