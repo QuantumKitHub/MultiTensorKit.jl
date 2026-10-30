@@ -135,37 +135,28 @@ end
 function extract_dual(::Type{I}) where {I <: BimoduleSector}
     N = _get_Ncache(I)
     ncats = size(I)
-    Is = zeros(Int, ncats)
+    nobj = [maximum(first, keys(N[i, j, j])) for i in 1:ncats, j in 1:ncats]
 
-    map(1:ncats) do i
+    Is = map(1:ncats) do i
         Niii = N[i, i, i]
-        nobji = maximum(first, keys(N[i, i, i]))
         # want to return a leftunit and rightunit for each entry in multifusion cat
         # leftunit/rightunit needs to at least be the unit object within a fusion cat
-        Is[i] = findfirst(1:nobji) do a
+        u = findfirst(1:nobj[i, i]) do a
             get(Niii, (a, a, a), 0) == 1 || return false # I x I -> I
-            for othera in 1:nobji
-                get(Niii, (othera, a, othera), 0) == 1 || return false # a x I -> a
-                get(Niii, (a, othera, othera), 0) == 1 || return false # I x a -> a
+
+            # I = leftunit(b) for every b in C_ij, I x b -> b in C_ii x C_ij -> C_ij
+            for j in 1:ncats, b in 1:nobj[i, j]
+                get(N[i, i, j], (a, b, b), 0) == 1 || return false
             end
 
-            # check leftunit
-            map(1:ncats) do j
-                nobjj = maximum(first, keys(N[j, j, j]))
-                for b in 1:nobjj
-                    get(N[i, j, j], (a, b, b), 0) == 1 || return false # I = leftunit(b)
-                end
-            end
-
-            # check rightunit
-            map(1:ncats) do k
-                nobjk = maximum(first, keys(N[k, k, k]))
-                for c in 1:nobjk
-                    get(N[k, i, k], (c, a, c), 0) == 1 || return false # I = rightunit(c)
-                end
+            # I = rightunit(c) for every c in C_ki, c x I -> c in C_ki x C_ii -> C_ki
+            for k in 1:ncats, c in 1:nobj[k, i]
+                get(N[k, i, i], (c, a, c), 0) == 1 || return false
             end
             return true
         end
+        isnothing(u) && throw(ArgumentError("no unit object found in subcategory ($i, $i) of $I"))
+        return u
     end
 
     allduals = Matrix{Vector{Int}}(undef, ncats, ncats) # ncats square matrix of vectors
