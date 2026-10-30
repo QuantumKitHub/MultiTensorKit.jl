@@ -1,15 +1,15 @@
 # MultiTensorKit.jl
 
-[TensorKit.jl](https://github.com/jutho/TensorKit.jl) extension for multi-fusion categories.
+[TensorKit.jl](https://github.com/QuantumKitHub/TensorKit.jl) extension for multi-fusion categories.
 
 
 | **Documentation** | **Digital Object Identifier** |
 |:-----------------:|:-----------------------------:|
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![DOI][doi-img]][doi-url] |
 
-| **Build Status** | **PkgEval** | **Coverage** |
-|:----------------:|:------------:|:------------:|
-| [![CI][ci-img]][ci-url] | [![PkgEval][pkgeval-img]][pkgeval-url] | [![Codecov][codecov-img]][codecov-url] |
+| **Build Status** | **PkgEval** | **Coverage** | **Quality assurance** |
+|:----------------:|:------------:|:------------:|:---------------------:|
+| [![CI][ci-img]][ci-url] | [![PkgEval][pkgeval-img]][pkgeval-url] | [![Codecov][codecov-img]][codecov-url] | [![Aqua QA][aqua-img]][aqua-url] |
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://QuantumKitHub.github.io/MultiTensorKit.jl/stable
@@ -29,3 +29,5 @@
 [pkgeval-img]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/T/MPSKit.svg
 [pkgeval-url]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/T/MPSKit.html
 
+[aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
+[aqua-url]: https://github.com/JuliaTesting/Aqua.jl
