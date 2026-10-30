@@ -92,59 +92,13 @@ println("-----------------------------")
 
 # explicitly test everything related to F-symbols
 # other option is to edit smallset to sample more
-for i in 1:r, j in 1:r
-    @testset "Unitarity of $Istr F-move ($i, $j)" begin
-        if i == j
-            @testset "Unitarity of fusion F-move ($i, $j)" begin
-                fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-                for a in fusion_objects, b in fusion_objects, c in fusion_objects
-                    @test SectorTestSuite.F_unitarity_test(a, b, c)
-                end
-            end
-        end
-
-        i != j || continue # do this part only when off-diagonal
-        mod_objects = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
-        left_fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-        right_fusion_objects = I.(j, j, MTK._get_dual_cache(I)[2][j, j])
-
-        # C x C x M -> M or D x D x Mop -> Mop
-        @testset "Unitarity of left module F-move ($i, $j)" begin
-            for a in left_fusion_objects, b in left_fusion_objects, A in mod_objects
-                @test SectorTestSuite.F_unitarity_test(a, b, A)
-            end
-        end
-
-        # M x D x D -> M or Mop x C x C -> Mop
-        @testset "Unitarity of right module F-move ($i, $j)" begin
-            for A in mod_objects, b in right_fusion_objects, c in right_fusion_objects
-                @test SectorTestSuite.F_unitarity_test(A, b, c)
-            end
-        end
-
-        # C x M x D -> M or D x Mop x C -> Mop
-        @testset "Unitarity of bimodule F-move ($i, $j)" begin
-            for a in left_fusion_objects, A in mod_objects, α in right_fusion_objects
-                @test SectorTestSuite.F_unitarity_test(a, A, α)
-            end
-        end
-
-        @testset "Unitarity of mixed module F-move ($i, $j) and opposite ($j, $i)" begin
-            modop_objects = I.(j, i, MTK._get_dual_cache(I)[2][j, i])
-
-            # C x M x Mop -> C or D x Mop x M -> D
-            # M x Mop x C -> C or Mop x M x D -> D
-            # Mop x C x M -> D or M x D x Mop -> C
-            for a in left_fusion_objects, A in mod_objects, Aop in modop_objects
-                @test SectorTestSuite.F_unitarity_test(a, A, Aop)
-                @test SectorTestSuite.F_unitarity_test(A, Aop, a)
-                @test SectorTestSuite.F_unitarity_test(Aop, a, A)
-            end
-
-            # M x Mop x M -> M or Mop x M x Mop -> Mop
-            for A in mod_objects, Aop in modop_objects
-                @test SectorTestSuite.F_unitarity_test(A, Aop, A)
-            end
+@testset "Unitarity of $Istr F-move" begin
+    objs = collect(values(I))
+    for a in objs, b in objs
+        a.j == b.i || continue
+        for c in objs
+            b.j == c.i || continue
+            @test SectorTestSuite.F_unitarity_test(a, b, c; atol = 1.0e-12, rtol = 1.0e-12)
         end
     end
 end
