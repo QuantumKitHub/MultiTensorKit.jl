@@ -36,6 +36,6 @@ to your project.
 Additionally, MultiTensorKit was made to be functional with [MPSKit.jl](https://github.com/QuantumKitHub/MPSKit.jl)
 and [MPSKitModels.jl](https://github.com/QuantumKitHub/MPSKitModels.jl) for Matrix Product State (MPS) calculations, supporting symmetries
 which go beyond TensorKit.
-In particular, TensorKit v0.16.0 and MPSKit v0.13.9 contain the necessary functionality to deal with the multifusion categorical structure provided by MultiTensorKit.
-All these packages are registered in JuliaRegistries and can be added through the package manager.
+TensorKit v0.17.2 is the recommended version, and any MPSKit version from v0.3.9 onwards supports multifusion MPS.
+These packages are registered in JuliaRegistries and can be added through the package manager.
 
