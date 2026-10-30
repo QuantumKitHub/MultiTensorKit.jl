@@ -8,6 +8,9 @@ DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 TensorKitSectors = "13a9c161-d5da-41f0-bcbd-e1a08ae0647f"
 
+[weakdeps]
+TensorKit = "07d1fe3e-3e46-537d-9eac-e9e13d0d4cec"
+
 [compat]
 Aqua = "0.8.9"
 DelimitedFiles = "1.9"
@@ -15,6 +18,7 @@ LinearAlgebra = "1"
 Pkg = "1"
 Random = "1"
 SafeTestsets = "0.1"
+TensorKit = "0.17.2"
 TensorKitSectors = "0.3.7"
 TensorOperations = "5"
 Test = "1.10"
