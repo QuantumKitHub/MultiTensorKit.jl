@@ -264,12 +264,12 @@ function TensorKitSectors.Fsymbol(a::I, b::I, c::I, d::I, e::I, f::I) where {I <
 
     T = sectorscalartype(I)
     Nabe > 0 && Necd > 0 && Nbcf > 0 && Nafd > 0 ||
-        return zeros(sectorscalartype(I), Nabe, Necd, Nbcf, Nafd)
+        return zeros(T, Nabe, Necd, Nbcf, Nafd)
 
     i, j, k, l = a.i, a.j, b.j, c.j
     colordict = _get_Fcache(I)[i, j, k, l]
     return get!(
-        () -> zeros(sectorscalartype(I), Nabe, Necd, Nbcf, Nafd),
+        () -> zeros(T, Nabe, Necd, Nbcf, Nafd),
         colordict, (a.label, b.label, c.label, d.label, e.label, f.label)
     )
 end
