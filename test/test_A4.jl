@@ -9,6 +9,10 @@ using .SectorTestSuite
 
 using MultiTensorKit
 using Test, TestExtras
+using Random
+
+Random.seed!(1234)
+rng = Random.Xoshiro(1234)
 
 const MTK = MultiTensorKit
 
@@ -23,21 +27,30 @@ println("----------------------")
     @time SectorTestSuite.test_sector(I)
 end
 
+@testset "$Istr construction and ordering" begin
+    @test_throws DomainError I(1, 1, 0)
+    @test_throws DomainError I(1, 1, -1)
+    @test_throws DomainError I(0, 1, 1)
+    @test_throws DomainError I(r + 1, 1, 1)
+    @test_throws DomainError I(1, 1, MTK._numlabels(I, 1, 1) + 1)
+    vals = collect(values(I))
+    @test issorted(vals)
+    @test length(vals) == length(values(I))
+end
+
 @testset "$Istr ($i, $j) basic properties" for i in 1:r, j in 1:r
-    Cii_obs = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-    Cij_obs = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
-    Cji_obs = I.(j, i, MTK._get_dual_cache(I)[2][j, i])
-    Cjj_obs = I.(j, j, MTK._get_dual_cache(I)[2][j, j])
-    c, m, mop, d = rand(Cii_obs), rand(Cij_obs), rand(Cji_obs), rand(Cjj_obs)
+    Cii_obs = I.(i, i, 1:MTK._numlabels(I, i, i))
+    Cij_obs = I.(i, j, 1:MTK._numlabels(I, i, j))
+    Cji_obs = I.(j, i, 1:MTK._numlabels(I, j, i))
+    Cjj_obs = I.(j, j, 1:MTK._numlabels(I, j, j))
+    c, m, mop, d = rand(rng, Cii_obs), rand(rng, Cij_obs), rand(rng, Cji_obs), rand(rng, Cjj_obs)
 
     if i == j
         @testset "Basic fusion properties" begin
             @test isunit(@testinferred(unit(c)))
-            u = I.(i, i, MTK._get_dual_cache(I)[1][i])
+            u = only(filter(isunit, Cii_obs))
             @test u == @testinferred(leftunit(u)) == @testinferred(rightunit(u)) ==
                 @testinferred(unit(u))
-            @test isunit(@testinferred(unit(c)))
-            @test dual(c) == I.(i, i, MTK._get_dual_cache(I)[2][i, i][c.label])
         end
     else
         @testset "Basic module properties" begin
@@ -48,7 +61,6 @@ end
             @test unit(d) == rightunit(m) == leftunit(mop)
             @test_throws DomainError unit(m)
             @test_throws DomainError unit(mop)
-            @test dual(m) == I.(j, i, MTK._get_dual_cache(I)[2][i, j][m.label])
         end
 
         @testset "$Istr Fusion rules" begin
@@ -56,7 +68,7 @@ end
             # forbidden fusions
             for obs in [(c, d), (d, c), (m, m), (mop, mop), (d, m), (m, c), (mop, d), (c, mop)]
                 @test isempty(⊗(obs...))
-                @test_throws argerr Nsymbol(obs..., rand([c, m, mop, d]))
+                @test_throws argerr Nsymbol(obs..., rand(rng, [c, m, mop, d]))
             end
 
             # allowed fusions
@@ -73,65 +85,28 @@ end
     end
 end
 
+@testset "$Istr units and duals of all objects" begin
+    for a in values(I)
+        ā = dual(a)
+        @test dual(ā) == a
+        @test Nsymbol(a, ā, leftunit(a)) == 1
+        @test Nsymbol(ā, a, rightunit(a)) == 1
+    end
+end
+
 println("-----------------------------")
 println("|    F-symbol data tests    |")
 println("-----------------------------")
 
 # explicitly test everything related to F-symbols
 # other option is to edit smallset to sample more
-for i in 1:r, j in 1:r
-    @testset "Unitarity of $Istr F-move ($i, $j)" begin
-        if i == j
-            @testset "Unitarity of fusion F-move ($i, $j)" begin
-                fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-                for a in fusion_objects, b in fusion_objects, c in fusion_objects
-                    @test SectorTestSuite.F_unitarity_test(a, b, c)
-                end
-            end
-        end
-
-        i != j || continue # do this part only when off-diagonal
-        mod_objects = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
-        left_fusion_objects = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-        right_fusion_objects = I.(j, j, MTK._get_dual_cache(I)[2][j, j])
-
-        # C x C x M -> M or D x D x Mop -> Mop
-        @testset "Unitarity of left module F-move ($i, $j)" begin
-            for a in left_fusion_objects, b in left_fusion_objects, A in mod_objects
-                @test SectorTestSuite.F_unitarity_test(a, b, A)
-            end
-        end
-
-        # M x D x D -> M or Mop x C x C -> Mop
-        @testset "Unitarity of right module F-move ($i, $j)" begin
-            for A in mod_objects, b in right_fusion_objects, c in right_fusion_objects
-                @test SectorTestSuite.F_unitarity_test(A, b, c)
-            end
-        end
-
-        # C x M x D -> M or D x Mop x C -> Mop
-        @testset "Unitarity of bimodule F-move ($i, $j)" begin
-            for a in left_fusion_objects, A in mod_objects, α in right_fusion_objects
-                @test SectorTestSuite.F_unitarity_test(a, A, α)
-            end
-        end
-
-        @testset "Unitarity of mixed module F-move ($i, $j) and opposite ($j, $i)" begin
-            modop_objects = I.(j, i, MTK._get_dual_cache(I)[2][j, i])
-
-            # C x M x Mop -> C or D x Mop x M -> D
-            # M x Mop x C -> C or Mop x M x D -> D
-            # Mop x C x M -> D or M x D x Mop -> C
-            for a in left_fusion_objects, A in mod_objects, Aop in modop_objects
-                @test SectorTestSuite.F_unitarity_test(a, A, Aop)
-                @test SectorTestSuite.F_unitarity_test(A, Aop, a)
-                @test SectorTestSuite.F_unitarity_test(Aop, a, A)
-            end
-
-            # M x Mop x M -> M or Mop x M x Mop -> Mop
-            for A in mod_objects, Aop in modop_objects
-                @test SectorTestSuite.F_unitarity_test(A, Aop, A)
-            end
+@testset "Unitarity of $Istr F-move" begin
+    objs = collect(values(I))
+    for a in objs, b in objs
+        a.j == b.i || continue
+        for c in objs
+            b.j == c.i || continue
+            @test SectorTestSuite.F_unitarity_test(a, b, c; atol = 1.0e-12, rtol = 1.0e-12)
         end
     end
 end
@@ -159,5 +134,3 @@ end
         end
     end
 end
-
-# include("TK_compat.jl")
