@@ -12,6 +12,7 @@ using Test, TestExtras
 using Random
 
 Random.seed!(1234)
+rng = Random.Xoshiro(1234)
 
 const MTK = MultiTensorKit
 
@@ -42,7 +43,7 @@ end
     Cij_obs = I.(i, j, 1:MTK._numlabels(I, i, j))
     Cji_obs = I.(j, i, 1:MTK._numlabels(I, j, i))
     Cjj_obs = I.(j, j, 1:MTK._numlabels(I, j, j))
-    c, m, mop, d = rand(Cii_obs), rand(Cij_obs), rand(Cji_obs), rand(Cjj_obs)
+    c, m, mop, d = rand(rng, Cii_obs), rand(rng, Cij_obs), rand(rng, Cji_obs), rand(rng, Cjj_obs)
 
     if i == j
         @testset "Basic fusion properties" begin
@@ -67,7 +68,7 @@ end
             # forbidden fusions
             for obs in [(c, d), (d, c), (m, m), (mop, mop), (d, m), (m, c), (mop, d), (c, mop)]
                 @test isempty(⊗(obs...))
-                @test_throws argerr Nsymbol(obs..., rand([c, m, mop, d]))
+                @test_throws argerr Nsymbol(obs..., rand(rng, [c, m, mop, d]))
             end
 
             # allowed fusions
