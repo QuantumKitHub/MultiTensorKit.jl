@@ -1,4 +1,4 @@
-const ImplementedBimoduleSectors = [:A4]
+const ImplementedBimoduleSectors = (:A4,)
 
 struct BimoduleSector{Name} <: Sector
     i::Int
@@ -98,9 +98,6 @@ function extract_Nsymbol(::Type{I}) where {I <: BimoduleSector}
         push!(colordict, (a, b, c) => N)
     end
 
-    ncats = maximum(maximum, keys(data_dict))
-    ncats == size(I) ||
-        throw(ArgumentError("Nsymbol data for $name has $ncats subcategories, but size($I) = $(size(I))"))
     return data_dict
 end
 
@@ -132,7 +129,7 @@ end
 
 function extract_dual(::Type{I}) where {I <: BimoduleSector}
     N = _get_Ncache(I)
-    ncats = size(I)
+    ncats = maximum(maximum, keys(N))
     nobj = [maximum(first, keys(N[i, j, j])) for i in 1:ncats, j in 1:ncats]
 
     Is = map(1:ncats) do i
@@ -181,8 +178,7 @@ end
 TensorKitSectors.UnitStyle(::Type{<:BimoduleSector}) = GenericUnit()
 
 function TensorKitSectors.allunits(::Type{I}) where {I <: BimoduleSector}
-    Is = _get_dual_cache(I)[1]
-    return ntuple(i -> I(i, i, Is[i]), Val(size(I)))
+    return I[I(i, i, u) for (i, u) in enumerate(_get_dual_cache(I)[1])]
 end
 
 function TensorKitSectors.isunit(a::BimoduleSector)
