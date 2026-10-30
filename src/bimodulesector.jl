@@ -208,6 +208,7 @@ function extract_Fsymbol(::Type{I}) where {I <: BimoduleSector}
     @assert isfile(filename) "cannot find $filename"
 
     Farray = readdlm(filename)
+    size(Farray, 2) == 16 || throw(ArgumentError("Fsymbol file for $name has wrong number of columns: $(size(Farray, 2)) != 16"))
     for ((i, j, k, l), colordict) in convert_Fs(Farray)
         result[(i, j, k, l)] = Dict{NTuple{6, Int}, Array{ComplexF64, 4}}()
         for ((a, b, c, d, e, f), Fvals) in colordict
