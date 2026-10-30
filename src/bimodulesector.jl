@@ -160,20 +160,16 @@ function extract_dual(::Type{I}) where {I <: BimoduleSector}
     end
 
     allduals = Matrix{Vector{Int}}(undef, ncats, ncats) # ncats square matrix of vectors
-    for i in 1:ncats
-        nobji = maximum(first, keys(N[i, i, i]))
-        for j in 1:ncats
-            allduals[i, j] = Int[]
-
-            nobjj = maximum(first, keys(N[j, j, j]))
-            # the nested vectors contain the duals of the objects in 𝒞_ij, which are in C_ji
-            Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> C_ii
-            Njij = N[j, i, j] # 𝒞_ji x 𝒞_ij -> C_jj
-            for i_ob in 1:nobji, j_ob in 1:nobjj
-                get(Niji, (i_ob, j_ob, Is[i]), 0) == 1 || continue # leftunit(c_ij) ∈ c_ij x c_ji
-                get(Njij, (j_ob, i_ob, Is[j]), 0) == 1 || continue # rightunit(c_ij) ∈ c_ji x c_ij
-                push!(allduals[i, j], j_ob)
+    for i in 1:ncats, j in 1:ncats
+        Niji = N[i, j, i] # 𝒞_ij x 𝒞_ji -> 𝒞_ii
+        Njij = N[j, i, j] # 𝒞_ji x 𝒞_ij -> 𝒞_jj
+        allduals[i, j] = map(1:nobj[i, j]) do m
+            mbar = findfirst(1:nobj[j, i]) do n
+                get(Niji, (m, n, Is[i]), 0) == 1 && # leftunit(m) in m x mbar
+                    get(Njij, (n, m, Is[j]), 0) == 1 # rightunit(m) in mbar x m
             end
+            isnothing(mbar) && error("no dual found for $I($i, $j, $m)")
+            return mbar
         end
     end
     return Is, allduals
