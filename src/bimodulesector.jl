@@ -93,10 +93,12 @@ function extract_Nsymbol(::Type{I}) where {I <: BimoduleSector}
     filename = joinpath(artifact_path, name, "Nsymbol.txt")
     isfile(filename) || throw(LoadError(filename, 0, "Nsymbol file not found for $name"))
     Narray = readdlm(filename) # matrix with 7 columns
+    size(Narray, 2) == 7 ||
+        throw(ArgumentError("Nsymbol file for $name has wrong number of columns: $(size(Narray, 2)) != 7"))
 
     data_dict = Dict{NTuple{3, Int}, Dict{NTuple{3, Int}, Int}}()
     for row in eachrow(Narray)
-        i, j, k, a, b, c, N = Int.(@view(row[1:size(I)]))
+        i, j, k, a, b, c, N = Int.(@view(row[1:7]))
         colordict = get!(data_dict, (i, j, k), Dict{NTuple{3, Int}, Int}())
         push!(colordict, (a, b, c) => N)
     end
