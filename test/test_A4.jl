@@ -38,16 +38,16 @@ end
 end
 
 @testset "$Istr ($i, $j) basic properties" for i in 1:r, j in 1:r
-    Cii_obs = I.(i, i, MTK._get_dual_cache(I)[2][i, i])
-    Cij_obs = I.(i, j, MTK._get_dual_cache(I)[2][i, j])
-    Cji_obs = I.(j, i, MTK._get_dual_cache(I)[2][j, i])
-    Cjj_obs = I.(j, j, MTK._get_dual_cache(I)[2][j, j])
+    Cii_obs = I.(i, i, 1:MTK._numlabels(I, i, i))
+    Cij_obs = I.(i, j, 1:MTK._numlabels(I, i, j))
+    Cji_obs = I.(j, i, 1:MTK._numlabels(I, j, i))
+    Cjj_obs = I.(j, j, 1:MTK._numlabels(I, j, j))
     c, m, mop, d = rand(Cii_obs), rand(Cij_obs), rand(Cji_obs), rand(Cjj_obs)
 
     if i == j
         @testset "Basic fusion properties" begin
             @test isunit(@testinferred(unit(c)))
-            u = I.(i, i, MTK._get_dual_cache(I)[1][i])
+            u = only(filter(isunit, Cii_obs))
             @test u == @testinferred(leftunit(u)) == @testinferred(rightunit(u)) ==
                 @testinferred(unit(u))
         end
