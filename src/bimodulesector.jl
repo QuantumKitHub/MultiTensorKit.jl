@@ -7,7 +7,7 @@ struct BimoduleSector{Name} <: Sector
     function BimoduleSector{Name}(i::Int, j::Int, label::Int) where {Name}
         Name ∈ ImplementedBimoduleSectors ||
             throw(ArgumentError("BimoduleSector $Name not implemented"))
-        r = size(BimoduleSector{Name})
+        r = rank(BimoduleSector{Name})
         (1 <= i <= r && 1 <= j <= r) ||
             throw(DomainError((i, j), "subcategory outside the $r×$r matrix $Name"))
         return 1 <= label <= _numlabels(BimoduleSector{Name}, i, j) ? new{Name}(i, j, label) :
@@ -38,13 +38,13 @@ function Base.convert(::Type{BimoduleSector{Name}}, d::NTuple{3, Int}) where {Na
     return BimoduleSector{Name}(d...)
 end
 
-Base.size(I::Type{<:BimoduleSector}) = size(_get_dual_cache(I)[3], 1)
+rank(I::Type{<:BimoduleSector}) = size(_get_dual_cache(I)[3], 1)
 
 Base.IteratorSize(::Type{<:SectorValues{<:BimoduleSector}}) = Base.SizeUnknown()
 
 function Base.iterate(iter::SectorValues{<:BimoduleSector}, (n, label) = (1, 1))
     A = eltype(iter)
-    s = size(A)
+    s = rank(A)
     n > s * s && return nothing
     i, j = fldmod1(n, s)
     maxlabel = _numlabels(A, i, j)

@@ -8,6 +8,7 @@ include(testsuite_path)
 using .SectorTestSuite
 
 using MultiTensorKit
+using MultiTensorKit: rank
 using Test, TestExtras
 using Random
 
@@ -18,7 +19,7 @@ const MTK = MultiTensorKit
 
 I = A4Object
 Istr = TensorKitSectors.type_repr(I)
-r = size(I)
+r = rank(I)
 
 println("----------------------")
 println("|    Sector tests    |")
